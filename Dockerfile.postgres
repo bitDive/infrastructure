@@ -1,0 +1,13 @@
+# Dockerfile.postgres
+FROM postgres:17.0
+
+# Устанавливаем pg_cron
+RUN apt-get update && apt-get install -y \
+    postgresql-17-cron \
+    postgresql-plpython3-17 \
+    python3-cryptography
+
+
+# Устанавливаем `shared_preload_libraries` и указываем базу данных для pg_cron
+RUN echo "shared_preload_libraries = 'pg_cron'" >> /usr/share/postgresql/postgresql.conf.sample && \
+    echo "cron.database_name = 'data-bitdive'" >> /usr/share/postgresql/postgresql.conf.sample

@@ -1,0 +1,73 @@
+# /vault/scripts/certificates-config.yaml.template
+
+services:
+  minio:
+    common_name: "minio.bitdive.local"
+    alt_names:
+      - "minio"
+      - "minio.bitdive"
+      - "minio.bitdive.internal"
+      - "localhost"
+      - "${SERVER_IP}"
+    cert_path: "/etc/minio/certs"
+    cert_file: "public.crt"
+    key_file: "private.key"
+    ca_file: "ca.crt"
+    ttl: "7200h"
+
+  postgres-server:
+    common_name: "${POSTGRES_HOST}"
+    alt_names:
+      - "postgres"
+      - "${POSTGRES_HOST}"
+      - "postgres.bitdive.internal"
+      - "localhost"
+      - "${SERVER_IP}"
+    cert_path: "/etc/postgresql/certs"
+    cert_file: "server.crt"
+    key_file: "server.key"
+    ca_file: "ca.crt"
+    ttl: "7200h"
+
+  postgres-client-keycloak:
+    common_name: "${POSTGRES_USER}"
+    cert_path: "/vault/ssl/postgres-client-keycloak"
+    cert_file: "server.crt"
+    key_file: "server.key"
+    ca_file: "ca.crt"
+    ttl: "7200h"
+    alt_names:
+      - "postgres-client-keycloak.example.com"
+      - "localhost"
+      - "${SERVER_IP}"
+    keystore_password: "${JAVA_KEYSTORE_PASSWORD}"
+    truststore_password: "${JAVA_TRUSTSTORE_PASSWORD}"
+
+  keycloak-https:
+    common_name: "keycloak.example.com"
+    cert_path: "/vault/ssl/keycloak-https"
+    cert_file: "keycloak.crt"
+    key_file: "keycloak.key"
+    ca_file: "ca.crt"
+    ttl: "7200h"
+    alt_names:
+      - "keycloak.example.com"
+      - "localhost"
+      - "${SERVER_IP}"
+      - "keycloak"
+    keystore_password: "${KEYCLOAK_KEY_STORE_PASSWORD}"
+    truststore_password: "${KEYCLOAK_TRUST_STORE_PASSWORD}"
+
+  frontend:
+    common_name: "bitdive.local"
+    alt_names:
+      - "frontend"
+      - "www.bitdive.local"
+      - "frontend.bitdive.internal"
+      - "localhost"
+      - "${SERVER_IP}"
+    cert_path: "/etc/nginx/certs"
+    cert_file: "cert.pem"
+    key_file: "key.pem"
+    ca_file: "ca.crt"
+    ttl: "7200h"
