@@ -47,6 +47,8 @@ services:
       - monitoring-api
       - flink_load
       - file-acceptor
+      - frontend
+      - nginx
 
 
   postgres:
@@ -215,16 +217,37 @@ services:
     networks:
       - bit-dive-network
 
+
+  nginx:
+    image: nginx:1.26.2
+    container_name: nginx-ssl-proxy
+    depends_on:
+      - frontend
+      - keycloak
+      - monitoring-api
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/:/etc/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8081:8081"
+      - "9999:9999"
+    networks:
+      - flink-network
+
   frontend:
     image: frolikoveabitdive/bitdive-front:0.0.1
     container_name: frontend
-    ports:
-      - "80:80"
     environment:
       REACT_APP_API_URL: ${REACT_APP_API_URL}
+      REACT_APP_KEYCLOAK_URL: ${REACT_APP_KEYCLOAK_URL}
+      REACT_APP_KEYCLOAK_REALM: ${REACT_APP_KEYCLOAK_REALM}
+      REACT_APP_KEYCLOAK_CLIENT_ID: ${REACT_APP_KEYCLOAK_CLIENT_ID}
+      GENERATE_SOURCEMAP: ${GENERATE_SOURCEMAP}
     restart: unless-stopped
     networks:
-      - bit-dive-network
+      - flink-network
 
 networks:
   bit-dive-network:
