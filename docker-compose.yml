@@ -94,8 +94,6 @@ services:
   keycloak:
     image: keycloak/keycloak:26.0
     container_name: keycloak
-    ports:
-      - "8080:${KEYCLOAK_HTTP_SSL_PORT}"
     restart: unless-stopped
     volumes:
       - ./vault/ssl/postgres-client-keycloak/keystore.jks:/etc/keycloak/postgres-keystore.jks
@@ -166,8 +164,6 @@ services:
       KEY_CLOAK_URL: ${KEYCLOAK_REALM_URL}
       SERVICE_ENABLE_SLL_CONNECT: true
     restart: unless-stopped
-    ports:
-      - "8081:8081"
     networks:
       - bit-dive-network
 
