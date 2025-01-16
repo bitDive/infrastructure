@@ -24,13 +24,14 @@ Before starting the services, create a `.env` file in the root directory with th
 
 ```env
 SERVER_IP=127.0.0.1
+SERVER_NAME=localhost
 
 # Vault Configuration
 VAULT_ADDR=https://${SERVER_IP}:8200
 VAULT_ADDR_CONTAINER=https://vault-server:8200
 
 # PostgreSQL Configuration
-POSTGRES_USER=citizix_user
+POSTGRES_USER=your_postgres_user_name
 POSTGRES_PASSWORD=your_postgres_password
 POSTGRES_DB=data-bitdive
 POSTGRES_HOST=postgres-bitdive
@@ -68,7 +69,7 @@ VAULT_CERT_SERVICE_COMMON_NAME=file-acceptor.bitdive
 VAULT_CERT_SERVICE_ALT_NAMES=${SERVER_IP}
 VAULT_CERT_SERVICE_TTL=24h
 KEYCLOAK_FRONTEND_URL_NOT_SSL=https://${SERVER_IP}:8999
-KEYCLOAK_FRONTEND_URL=http://${SERVER_IP}:8999
+KEYCLOAK_FRONTEND_URL=https://${SERVER_NAME}:8999
 VAULT_CERT_KEYCLOAK_COMMON_NAME=${SERVER_IP}
 VAULT_CERT_KEYCLOAK_ALT_NAME=${SERVER_IP}
 VAULT_CERT_KEYCLOAK_TTL=24h
@@ -78,11 +79,31 @@ KEYCLOAK_REALM_URL=https://keycloak:${KEYCLOAK_HTTP_SSL_PORT}/realms/bitdive/pro
 KEYCLOAK_REALM_URL_NOT_SSL=http://keycloak:8080/realms/bitdive/protocol/openid-connect/certs
 
 # Frontend Configuration
-REACT_APP_API_URL=http://${SERVER_IP}:8081
+REACT_APP_API_URL=https://${SERVER_NAME}:8081
+REACT_APP_KEYCLOAK_URL=https://${SERVER_NAME}:9999/
+REACT_APP_KEYCLOAK_REALM=bitdive
+REACT_APP_KEYCLOAK_CLIENT_ID=react-client
+GENERATE_SOURCEMAP=false
 ```
 
 ## Usage
-
+### Step 0: Need to be replaced with your values
+```bash
+SERVER_IP=127.0.0.1
+SERVER_NAME=localhost
+POSTGRES_USER=your_postgres_user_name
+POSTGRES_PASSWORD=your_postgres_password
+MINIO_ROOT_USER=your_minio_user
+MINIO_ROOT_PASSWORD=your_minio_password
+KEYCLOAK_ADMIN=your_keycloak_user
+KEYCLOAK_ADMIN_PASSWORD=your_keycloak_password
+KEYCLOAK_KEY_STORE_PASSWORD=your-keycloak-keystore-password
+KEYCLOAK_TRUST_STORE_PASSWORD=your-keycloak-truststore-password
+JAVA_KEYSTORE_PASSWORD=your-keystore-password
+JAVA_TRUSTSTORE_PASSWORD=your-truststore-password
+VAULT_LOGIN=your_vault_login
+VAULT_PASSWORD=your_vault_password
+```
 ### Step 1: Start Vault
 
 Run the following command to start the Vault service:
