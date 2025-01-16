@@ -234,7 +234,7 @@ services:
       - "8081:8081"
       - "9999:9999"
     networks:
-      - flink-network
+      - bit-dive-network
 
   frontend:
     image: frolikoveabitdive/bitdive-front:0.0.1
@@ -247,7 +247,7 @@ services:
       GENERATE_SOURCEMAP: ${GENERATE_SOURCEMAP}
     restart: unless-stopped
     networks:
-      - flink-network
+      - bit-dive-network
 
 networks:
   bit-dive-network:
