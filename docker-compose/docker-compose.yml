@@ -53,7 +53,7 @@ services:
 
 
   nginx:
-    image: nginx:1.26.2
+    image: openresty/openresty:latest
     container_name: nginx-ssl-proxy
     depends_on:
       - frontend
