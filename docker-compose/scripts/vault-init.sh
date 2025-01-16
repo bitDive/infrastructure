@@ -206,6 +206,7 @@ generate_certificate() {
         return
     fi
 
+
     # Генерация сертификата с помощью Vault PKI
     vault write -format=json pki/issue/bitdive \
         common_name="$common_name" \

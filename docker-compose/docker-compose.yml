@@ -23,7 +23,7 @@ services:
     cap_add:
       - IPC_LOCK
     networks:
-      - bit-dive-network
+      - flink-network
 
   init-db-ssl:
     image: busybox
@@ -51,6 +51,26 @@ services:
       - nginx
 
 
+
+  nginx:
+    image: nginx:1.26.2
+    container_name: nginx-ssl-proxy
+    depends_on:
+      - frontend
+      - keycloak
+      - monitoring-api
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/:/etc/ssl:ro
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8081:8081"
+      - "9999:9999"
+    networks:
+      - flink-network
+
+
   postgres:
     build:
       context: .
@@ -73,7 +93,7 @@ services:
        -c config_file=/etc/postgresql/postgresql.conf
     restart: unless-stopped
     networks:
-      - bit-dive-network
+      - flink-network
 
   minio:
     image: minio/minio:RELEASE.2024-10-02T17-50-41Z
@@ -89,15 +109,19 @@ services:
       - "9000:9000"
       - "9001:9001"
     networks:
-      - bit-dive-network
+      - flink-network
 
   keycloak:
     image: keycloak/keycloak:26.0
     container_name: keycloak
     restart: unless-stopped
+    ports:
+      - "8443:8443"
     volumes:
+      # Для подключения к PostgreSQL
       - ./vault/ssl/postgres-client-keycloak/keystore.jks:/etc/keycloak/postgres-keystore.jks
       - ./vault/ssl/postgres-client-keycloak/truststore.jks:/etc/keycloak/postgres-truststore.jks
+      # Для HTTPS Keycloak
       - ./vault/ssl/keycloak-https/keystore.jks:/etc/keycloak/https-keystore.jks
       - ./vault/ssl/keycloak-https/truststore.jks:/etc/keycloak/https-truststore.jks
     environment:
@@ -108,16 +132,19 @@ services:
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KEYCLOAK_HOSTNAME: keycloak
-      KEYCLOAK_FRONTEND_URL: ${KEYCLOAK_FRONTEND_URL}
-      KC_HOSTNAME_STRICT: "false"
+      KC_PROXY_HEADERS: xforwarded
+
+
+      KC_HOSTNAME_STRICT: false
       KC_HTTP_ENABLED: "${KEYCLOAK_HTTP_ENABLED}"
       KC_HTTP_SSL_PORT: "${KEYCLOAK_HTTP_SSL_PORT}"
       KC_HTTPS_KEY_STORE_FILE: "/etc/keycloak/https-keystore.jks"
       KC_HTTPS_KEY_STORE_PASSWORD: "${KEYCLOAK_KEY_STORE_PASSWORD}"
       JAVA_OPTS_APPEND: "-Djavax.net.ssl.keyStore=/etc/keycloak/postgres-keystore.jks -Djavax.net.ssl.keyStorePassword=${JAVA_KEYSTORE_PASSWORD} -Djavax.net.ssl.trustStore=/etc/keycloak/postgres-truststore.jks -Djavax.net.ssl.trustStorePassword=${JAVA_TRUSTSTORE_PASSWORD}"
     networks:
-      - bit-dive-network
+      - flink-network
     command: [ "start" ]
+
 
   init-db:
     image: frolikoveabitdive/bitdive-db-liquibase:0.0.1
@@ -135,7 +162,7 @@ services:
       VAULT_CERTIFICATION_DB_ALT_NAME: ${VAULT_CERT_DB_ALT_NAME}
       VAULT_CERTIFICATION_DB_TTL: ${VAULT_CERT_DB_TTL}
     networks:
-      - bit-dive-network
+      - flink-network
 
   monitoring-api:
     image: frolikoveabitdive/bitdive-monitoring-api:0.0.1
@@ -165,7 +192,8 @@ services:
       SERVICE_ENABLE_SLL_CONNECT: true
     restart: unless-stopped
     networks:
-      - bit-dive-network
+      - flink-network
+
 
   flink_load:
     image: frolikoveabitdive/bitdive-flink-write-minio:0.0.1
@@ -189,7 +217,8 @@ services:
     depends_on:
       - minio
     networks:
-      - bit-dive-network
+      - flink-network
+
 
   file-acceptor:
     image: frolikoveabitdive/bitdive-file-acceptor:0.0.1
@@ -211,26 +240,7 @@ services:
     depends_on:
       - minio
     networks:
-      - bit-dive-network
-
-
-  nginx:
-    image: nginx:1.26.2
-    container_name: nginx-ssl-proxy
-    depends_on:
-      - frontend
-      - keycloak
-      - monitoring-api
-    volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
-      - ./nginx/:/etc/ssl:ro
-    ports:
-      - "80:80"
-      - "443:443"
-      - "8081:8081"
-      - "9999:9999"
-    networks:
-      - bit-dive-network
+      - flink-network
 
   frontend:
     image: frolikoveabitdive/bitdive-front:0.0.1
@@ -243,8 +253,8 @@ services:
       GENERATE_SOURCEMAP: ${GENERATE_SOURCEMAP}
     restart: unless-stopped
     networks:
-      - bit-dive-network
+      - flink-network
 
 networks:
-  bit-dive-network:
+  flink-network:
     driver: bridge
