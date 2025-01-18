@@ -31,7 +31,7 @@ VAULT_ADDR=https://${SERVER_IP}:8200
 VAULT_ADDR_CONTAINER=https://vault-server:8200
 
 # PostgreSQL Configuration
-POSTGRES_USER=your_postgres_user_name
+POSTGRES_USER=citizix_user
 POSTGRES_PASSWORD=your_postgres_password
 POSTGRES_DB=data-bitdive
 POSTGRES_HOST=postgres-bitdive
@@ -92,7 +92,6 @@ GENERATE_SOURCEMAP=false
 SERVER_IP=127.0.0.1
 SERVER_NAME=localhost
 
-POSTGRES_USER=your_postgres_user_name
 POSTGRES_PASSWORD=your_postgres_password
 
 MINIO_ROOT_USER=your_minio_user
