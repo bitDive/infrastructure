@@ -74,7 +74,7 @@ services:
   postgres:
     build:
       context: .
-      dockerfile: Dockerfile.postgres
+      dockerfile: DockerfilePostgres
     container_name: postgres-bitdive
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
