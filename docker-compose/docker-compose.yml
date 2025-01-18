@@ -91,6 +91,7 @@ services:
     command: >
       postgres 
        -c config_file=/etc/postgresql/postgresql.conf
+       && pg_ctl reload
     restart: unless-stopped
     networks:
       - flink-network
