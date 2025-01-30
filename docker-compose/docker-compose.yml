@@ -67,6 +67,8 @@ services:
       - "443:443"
       - "8081:8081"
       - "9999:9999"
+      - "62049:62049"
+      - "9001:9001"
     networks:
       - flink-network
 
@@ -108,7 +110,6 @@ services:
     command: server --console-address "${MINIO_CONSOLE_ADDRESS}" /data
     ports:
       - "9000:9000"
-      - "9001:9001"
     networks:
       - flink-network
 
@@ -116,8 +117,6 @@ services:
     image: keycloak/keycloak:26.0
     container_name: keycloak
     restart: unless-stopped
-    ports:
-      - "8443:8443"
     volumes:
       # Для подключения к PostgreSQL
       - ./vault/ssl/postgres-client-keycloak/keystore.jks:/etc/keycloak/postgres-keystore.jks
@@ -134,8 +133,6 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KEYCLOAK_HOSTNAME: keycloak
       KC_PROXY_HEADERS: xforwarded
-
-
       KC_HOSTNAME_STRICT: false
       KC_HTTP_ENABLED: "${KEYCLOAK_HTTP_ENABLED}"
       KC_HTTP_SSL_PORT: "${KEYCLOAK_HTTP_SSL_PORT}"
@@ -200,8 +197,6 @@ services:
     image: frolikoveabitdive/bitdive-flink-write-minio:0.0.1
     container_name: flink_load_minio
     restart: unless-stopped
-    ports:
-      - "62049:62049"
     environment:
       MINIO_USER: ${MINIO_ROOT_USER}
       MINIO_PASSWORD: ${MINIO_ROOT_PASSWORD}
