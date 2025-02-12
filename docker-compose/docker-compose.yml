@@ -110,7 +110,6 @@ services:
     command: server --console-address "${MINIO_CONSOLE_ADDRESS}" /data
     ports:
       - "9000:9000"
-      - "9001:9001"
     networks:
       - flink-network
 
