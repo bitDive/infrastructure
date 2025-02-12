@@ -110,6 +110,7 @@ services:
     command: server --console-address "${MINIO_CONSOLE_ADDRESS}" /data
     ports:
       - "9000:9000"
+      - "9001:9001"
     networks:
       - flink-network
 
@@ -118,10 +119,8 @@ services:
     container_name: keycloak
     restart: unless-stopped
     volumes:
-      # Для подключения к PostgreSQL
       - ./vault/ssl/postgres-client-keycloak/keystore.jks:/etc/keycloak/postgres-keystore.jks
       - ./vault/ssl/postgres-client-keycloak/truststore.jks:/etc/keycloak/postgres-truststore.jks
-      # Для HTTPS Keycloak
       - ./vault/ssl/keycloak-https/keystore.jks:/etc/keycloak/https-keystore.jks
       - ./vault/ssl/keycloak-https/truststore.jks:/etc/keycloak/https-truststore.jks
     environment:
@@ -185,6 +184,8 @@ services:
       VAULT_CERTIFICATION_KEY_CLOAK_COMMON_NAME: ${VAULT_CERT_KEYCLOAK_COMMON_NAME}
       VAULT_CERTIFICATION_KEY_CLOAK_ALT_NAME: ${VAULT_CERT_KEYCLOAK_ALT_NAME}
       VAULT_CERTIFICATION_KEY_CLOAK_TTL: ${VAULT_CERT_KEYCLOAK_TTL}
+
+      URL_FRONT_SYSTEM: ${URL_FRONT_SYSTEM}
 
       KEY_CLOAK_URL: ${KEYCLOAK_REALM_URL}
       SERVICE_ENABLE_SLL_CONNECT: true
