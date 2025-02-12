@@ -26,6 +26,7 @@ Before starting the services, create a `.env` file in the root directory with th
 SERVER_IP=127.0.0.1
 SERVER_NAME=localhost
 
+URL_FRONT_SYSTEM=https://${SERVER_NAME}
 # Vault Configuration
 VAULT_ADDR=https://${SERVER_IP}:8200
 VAULT_ADDR_CONTAINER=https://vault-server:8200
