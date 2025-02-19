@@ -53,14 +53,14 @@ services:
 
 
   nginx:
-    image: openresty/openresty:latest
+    image: nginx:1.27.4
     container_name: nginx-ssl-proxy
     depends_on:
       - frontend
       - keycloak
       - monitoring-api
     volumes:
-      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./nginx/default.conf:/etc/nginx/templates/conf.d/default.conf.template
       - ./nginx/:/etc/ssl:ro
     ports:
       - "80:80"
@@ -69,6 +69,11 @@ services:
       - "9999:9999"
       - "62049:62049"
       - "9001:9001"
+    environment:
+      - SERVER_NAME=${SERVER_NAME}
+      - URL_FRONT_SYSTEM=${URL_FRONT_SYSTEM}
+    command: >
+      /bin/sh -c "envsubst '$$SERVER_NAME $$URL_FRONT_SYSTEM' < /etc/nginx/templates/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'"
     networks:
       - flink-network
 
