@@ -2,20 +2,21 @@
 
 FROM vault:1.13.3
 
-# Установка необходимых утилит
-RUN apk add --no-cache jq curl openssl netcat-openbsd yq bash openjdk11 gettext
+RUN apk add --no-cache jq curl openssl netcat-openbsd yq bash openjdk11 gettext dos2unix
 
-# Создание необходимых директорий
 RUN mkdir -p /vault/config /vault/scripts /vault/ssl
 
-# Копирование конфигурации и скриптов
 COPY ./configVault/config.hcl /vault/config/config.hcl
 COPY ./scripts/vault-init.sh /vault/scripts/
 COPY ./scripts/custom-entrypoint.sh /vault/custom-entrypoint.sh
 COPY ./scripts/certificates-config.yaml.template /vault/scripts/certificates-config.yaml.template
 
-# Установка прав на выполнение скриптов
+RUN dos2unix /vault/custom-entrypoint.sh \
+    && dos2unix /vault/scripts/vault-init.sh
+
 RUN chmod +x /vault/custom-entrypoint.sh \
     && chmod +x /vault/scripts/*.sh
+
+RUN ls -l /vault/
 
 ENTRYPOINT ["/vault/custom-entrypoint.sh"]
