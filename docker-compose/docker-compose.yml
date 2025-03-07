@@ -148,7 +148,7 @@ services:
 
 
   init-db:
-    image: frolikoveabitdive/bitdive-db-liquibase:0.0.1
+    image: frolikoveabitdive/bitdive-db-liquibase:latest
     container_name: bitdive-init-db
     environment:
       POSTGRES_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
@@ -166,7 +166,7 @@ services:
       - flink-network
 
   monitoring-api:
-    image: frolikoveabitdive/bitdive-monitoring-api:0.0.1
+    image: frolikoveabitdive/bitdive-monitoring-api:latest
     container_name: monitoring-api
     environment:
       POSTGRES_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
@@ -199,7 +199,7 @@ services:
 
 
   flink_load:
-    image: frolikoveabitdive/bitdive-flink-write-minio:0.0.1
+    image: frolikoveabitdive/bitdive-flink-write-minio:latest
     container_name: flink_load_minio
     restart: unless-stopped
     environment:
@@ -222,7 +222,7 @@ services:
 
 
   file-acceptor:
-    image: frolikoveabitdive/bitdive-file-acceptor:0.0.1
+    image: frolikoveabitdive/bitdive-file-acceptor:latest
     container_name: file-acceptor
     restart: unless-stopped
     environment:
@@ -244,7 +244,7 @@ services:
       - flink-network
 
   frontend:
-    image: frolikoveabitdive/bitdive-front:0.0.1
+    image: frolikoveabitdive/bitdive-front:latest
     container_name: frontend
     environment:
       REACT_APP_API_URL: ${REACT_APP_API_URL}
