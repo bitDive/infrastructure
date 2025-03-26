@@ -420,6 +420,16 @@ path "secret/data-encryption-key" {
 path "secret/metadata/data-encryption-key" {
   capabilities = ["list"]
 }
+
+# Разрешаем создание, чтение и удаление записей
+path "secret/data/credentials-bit-dive/*" {
+  capabilities = ["create", "read", "update", "delete", "list"]
+}
+
+# Разрешаем просмотр метаданных
+path "secret/metadata/credentials-bit-dive/*" {
+  capabilities = ["list"]
+}
 EOF
         vault policy write kv-user /tmp/kv-user.hcl
         echo "Политика kv-user создана."
