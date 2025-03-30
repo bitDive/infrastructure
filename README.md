@@ -28,7 +28,7 @@ SERVER_NAME=localhost
 
 URL_FRONT_SYSTEM=https://${SERVER_NAME}
 # Vault Configuration
-VAULT_ADDR=https://${SERVER_IP}:8200
+VAULT_ADDR=https://127.0.0.1:8200
 VAULT_ADDR_CONTAINER=https://vault-server:8200
 
 # PostgreSQL Configuration
