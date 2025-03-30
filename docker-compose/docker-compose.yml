@@ -7,8 +7,6 @@ services:
       context: .
       dockerfile: DockerfileVault
     container_name: vault-server
-    ports:
-      - "8200:8200"
     environment:
       VAULT_ADDR: ${VAULT_ADDR}
       VAULT_SKIP_VERIFY: true
@@ -69,6 +67,7 @@ services:
       - "9999:9999"
       - "62049:62049"
       - "9001:9001"
+      - "8200:8200"
     environment:
       - SERVER_NAME=${SERVER_NAME}
       - URL_FRONT_SYSTEM=${URL_FRONT_SYSTEM}
