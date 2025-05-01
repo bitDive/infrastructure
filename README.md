@@ -12,7 +12,6 @@ This repository contains a Docker Compose setup for deploying the BitDive enviro
 - **Frontend**: A React-based frontend for the BitDive application.
 
 ## URL
-
 https://bitdive.io/
 
 ## Prerequisites
