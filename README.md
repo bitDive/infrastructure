@@ -11,7 +11,8 @@ This repository contains a Docker Compose setup for deploying the BitDive enviro
 - **File Acceptor**: A service for accepting and processing files.
 - **Frontend**: A React-based frontend for the BitDive application.
 
-## URL
+
+URL
 https://bitdive.io/
 
 ## Prerequisites
