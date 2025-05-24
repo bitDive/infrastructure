@@ -147,7 +147,7 @@ docker-compose up init-container-ssl
 - **Vault**: [https://localhost:8200](https://localhost:8200)
 - **PostgreSQL**: Accessible on port `5432`.
 - **MinIO**: [http://localhost:9000](http://localhost:9000) (console: [http://localhost:9001](http://localhost:9001))
-- **Keycloak**: [https://localhost:8443](https://localhost:8443)
+- **Keycloak**: [https://localhost:8443](https://localhost:9999)
 - **Frontend**: [http://localhost](http://localhost)
 
 ## Notes
