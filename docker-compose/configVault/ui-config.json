@@ -1,0 +1,12 @@
+{
+  "ui": true,
+  "ui_config": {
+    "enabled": true,
+    "header_color": "#1563ff",
+    "header_text_color": "white"
+  },
+  "api_addr": "https://localhost/vault",
+  "cluster_addr": "https://vault-server:8201",
+  "path_prefix": "/vault",
+  "ui_path_prefix": "/vault/ui"
+} 
