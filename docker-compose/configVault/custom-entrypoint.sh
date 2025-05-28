@@ -3,6 +3,12 @@
 
 set -e
 
+# Устанавливаем переменные для работы с префиксом
+export VAULT_UI_PATH_PREFIX="/vault"
+export VAULT_API_PATH_PREFIX="/vault"
+export VAULT_CLUSTER_ADDR="https://vault-server:8201"
+export VAULT_REDIRECT_ADDR="https://localhost/vault"
+
 # Считываем переменные из файла localhost.env
 if [ -f "/vault/.env" ]; then
   export $(grep -v '^#' /vault/localhost.env | xargs)

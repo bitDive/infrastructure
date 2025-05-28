@@ -8,6 +8,10 @@ listener "tcp" {
   tls_key_file  = "/vault/keys/vault.key"
 }
 
-ui = true
+ui = false
 
-api_addr = "https://localhost:8200"
+api_addr = "https://vault.localhost"
+cluster_addr = "https://vault-server:8201"
+
+# Настройки для работы с префиксом
+path_prefix = "/vault"
