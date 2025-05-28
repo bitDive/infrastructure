@@ -11,6 +11,10 @@ This repository contains a Docker Compose setup for deploying the BitDive enviro
 - **File Acceptor**: A service for accepting and processing files.
 - **Frontend**: A React-based frontend for the BitDive application.
 
+
+## URL
+https://bitdive.io/
+
 ## Prerequisites
 
 Ensure that you have the following installed on your system:
@@ -143,9 +147,11 @@ docker-compose up init-container-ssl
 - **Vault**: [https://localhost:8200](https://localhost:8200)
 - **PostgreSQL**: Accessible on port `5432`.
 - **MinIO**: [http://localhost:9000](http://localhost:9000) (console: [http://localhost:9001](http://localhost:9001))
-- **Keycloak**: [https://localhost:8443](https://localhost:8443)
+- **Keycloak**: [https://localhost:9999](https://localhost:9999)
 - **Frontend**: [http://localhost](http://localhost)
 
+## Configuring Keycloak
+https://bitdive.io/docs/keycloak-configuration/
 ## Notes
 
 - Logs and data are persisted in the `./vault` and `./postgresql` directories.
