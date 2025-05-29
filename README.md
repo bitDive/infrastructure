@@ -123,7 +123,7 @@ VAULT_PASSWORD=your_vault_password
 Run the following command to start the Vault service:
 
 ```bash
-docker-compose up vault
+docker-compose up -d vault
 ```
 
 Wait until Vault is fully initialized.
