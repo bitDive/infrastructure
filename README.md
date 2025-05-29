@@ -44,8 +44,8 @@ POSTGRES_PORT=5432
 
 # MinIO Configuration
 MINIO_ROOT_USER=your_minio_user
-MINIO_ROOT_PASSWORD=your_minio_passwor
-MINIO_DOMAIN=http://${SERVER_IP}
+MINIO_ROOT_PASSWORD=your_minio_password
+MINIO_DOMAIN=localhost
 MINIO_CONSOLE_ADDRESS=:9001
 MINIO_ENDPOINT=http://minio:9000
 
@@ -146,7 +146,8 @@ docker-compose up init-container-ssl
 
 - **Vault**: [https://localhost:8200](https://localhost:8200)
 - **PostgreSQL**: Accessible on port `5432`.
-- **MinIO**: [http://localhost:9000](http://localhost:9000) (console: [http://localhost:9001](http://localhost:9001))
+- **MinIO Console**: [https://localhost/minio](https://localhost/minio) (веб-интерфейс)
+- **MinIO API**: [https://localhost/minio-api](https://localhost/minio-api) (прямой доступ к API)
 - **Keycloak**: [https://localhost:9999](https://localhost:9999)
 - **Frontend**: [http://localhost](http://localhost)
 
@@ -163,3 +164,27 @@ https://bitdive.io/docs/keycloak-configuration/
 - **Vault does not start**: Ensure that the configuration file exists in the `./configVault` directory and is correctly configured.
 - **PostgreSQL SSL issues**: Verify that the certificates in `./vault/ssl/postgres-server` are correctly configured and have proper permissions.
 - **MinIO access issues**: Ensure that the `MINIO_ROOT_USER` and `MINIO_ROOT_PASSWORD` in `.env` match the configured values.
+
+## Restarting Services After Configuration Changes
+
+If you've made changes to the configuration files (nginx, docker-compose.yml, or .env), you need to restart the affected services:
+
+### For MinIO configuration changes:
+```bash
+# Stop and remove containers
+docker-compose down
+
+# Rebuild and start services
+docker-compose up -d minio nginx
+
+# Or restart all services
+docker-compose up -d
+```
+
+### For nginx configuration changes only:
+```bash
+# Restart just nginx
+docker-compose restart nginx
+```
+
+After restarting, MinIO console will be available at: [https://localhost/minio](https://localhost/minio)
