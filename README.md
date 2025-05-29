@@ -31,6 +31,8 @@ SERVER_IP=127.0.0.1
 SERVER_NAME=localhost
 
 URL_FRONT_SYSTEM=https://${SERVER_NAME}
+#http://${SERVER_NAME}:3000
+
 # Vault Configuration
 VAULT_ADDR=https://127.0.0.1:8200
 VAULT_ADDR_CONTAINER=https://vault-server:8200
@@ -44,8 +46,8 @@ POSTGRES_PORT=5432
 
 # MinIO Configuration
 MINIO_ROOT_USER=your_minio_user
-MINIO_ROOT_PASSWORD=your_minio_password
-MINIO_DOMAIN=localhost
+MINIO_ROOT_PASSWORD=your_minio_passwor
+MINIO_DOMAIN=http://${SERVER_NAME}/minio
 MINIO_CONSOLE_ADDRESS=:9001
 MINIO_ENDPOINT=http://minio:9000
 
@@ -63,14 +65,16 @@ JAVA_TRUSTSTORE_PASSWORD=your-truststore-password
 KEYCLOAK_DB_URL=jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/keycloak?ssl=true&sslmode=verify-full&&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory
 
 # Vault User Credentials
-VAULT_LOGIN=your_vault_login
-VAULT_PASSWORD=your_vault_password
+VAULT_LOGIN=username
+VAULT_PASSWORD=password123
 
 # Vault Certificates Configuration
 VAULT_CERT_DB_COMMON_NAME=${POSTGRES_USER}
 VAULT_CERT_DB_ALT_NAME=${POSTGRES_HOST}
 VAULT_CERT_DB_TTL=24h
 VAULT_CERT_SERVICE_COMMON_NAME=file-acceptor.bitdive
+VAULT_CERT_SERVICE_COMMON_NAME_FILE_ACCEPTOR=file-acceptor.${SERVER_NAME}
+VAULT_CERT_SERVICE_ALT_NAMES_FILE_ACCEPTOR=file-acceptor.${SERVER_NAME}
 VAULT_CERT_SERVICE_ALT_NAMES=${SERVER_IP}
 VAULT_CERT_SERVICE_TTL=24h
 KEYCLOAK_FRONTEND_URL_NOT_SSL=https://${SERVER_IP}:8999
@@ -84,8 +88,8 @@ KEYCLOAK_REALM_URL=https://keycloak:${KEYCLOAK_HTTP_SSL_PORT}/realms/bitdive/pro
 KEYCLOAK_REALM_URL_NOT_SSL=http://keycloak:8080/realms/bitdive/protocol/openid-connect/certs
 
 # Frontend Configuration
-REACT_APP_API_URL=https://${SERVER_NAME}:8081
-REACT_APP_KEYCLOAK_URL=https://${SERVER_NAME}:9999/
+REACT_APP_API_URL=https://${SERVER_NAME}/monitoring-api
+REACT_APP_KEYCLOAK_URL=https://${SERVER_NAME}/keyCloak/
 REACT_APP_KEYCLOAK_REALM=bitdive
 REACT_APP_KEYCLOAK_CLIENT_ID=react-client
 GENERATE_SOURCEMAP=false
@@ -144,13 +148,11 @@ docker-compose up init-container-ssl
 
 ## Accessing the Services
 
-- **Vault**: [https://localhost:8200](https://localhost:8200)
 - **PostgreSQL**: Accessible on port `5432`.
-- **MinIO Console**: [https://localhost/minio](https://localhost/minio) (веб-интерфейс)
-- **MinIO API**: [https://localhost/minio-api](https://localhost/minio-api) (прямой доступ к API)
-- **Keycloak**: [https://localhost:9999](https://localhost:9999)
+- **Keycloak**: [https://localhost/keyCloak](https://localhost/keyCloak)
 - **Frontend**: [http://localhost](http://localhost)
-
+- **flink-load**: [http://localhost/flink-load](http://localhost/flink-load)
+  
 ## Configuring Keycloak
 https://bitdive.io/docs/keycloak-configuration/
 ## Notes

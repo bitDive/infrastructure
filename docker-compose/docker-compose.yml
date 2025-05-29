@@ -128,7 +128,7 @@ services:
       KC_HOSTNAME_STRICT: false
 
       KC_HEALTH_ENABLED: 'true'
-      KC_HTTP_RELATIVE_PATH: '/KeyCloak'
+      KC_HTTP_RELATIVE_PATH: '/keyCloak'
       PROXY_ADDRESS_FORWARDING: 'true'
 
 
@@ -246,6 +246,25 @@ services:
       REACT_APP_KEYCLOAK_REALM: ${REACT_APP_KEYCLOAK_REALM}
       REACT_APP_KEYCLOAK_CLIENT_ID: ${REACT_APP_KEYCLOAK_CLIENT_ID}
       GENERATE_SOURCEMAP: ${GENERATE_SOURCEMAP}
+    restart: unless-stopped
+    networks:
+      - flink-network
+
+  mcp-server:
+    image: frolikoveabitdive/docker-file-mcp-server:latest
+    container_name: mcp-server
+    environment:
+      POSTGRES_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASS: ${POSTGRES_PASSWORD}
+
+      VAULT_URL: ${VAULT_ADDR_CONTAINER}
+      VAULT_LOGIN: ${VAULT_LOGIN}
+      VAULT_PASSWORD: ${VAULT_PASSWORD}
+
+      VAULT_CERTIFICATION_DB_COMMON_NAME: ${VAULT_CERT_DB_COMMON_NAME}
+      VAULT_CERTIFICATION_DB_ALT_NAME: ${VAULT_CERT_DB_ALT_NAME}
+      VAULT_CERTIFICATION_DB_TTL: ${VAULT_CERT_DB_TTL}
     restart: unless-stopped
     networks:
       - flink-network
