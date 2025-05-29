@@ -46,6 +46,7 @@ services:
       - flink_load
       - file-acceptor
       - frontend
+      - mcp-server
       - nginx
 
 
