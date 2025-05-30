@@ -9,7 +9,7 @@ services:
     container_name: vault-server
     environment:
       VAULT_ADDR: ${VAULT_ADDR}
-      VAULT_SKIP_VERIFY: true
+      VAULT_SKIP_VERIFY: 'true'
     volumes:
       - ./vault/data:/vault/file
       - ./vault/logs:/vault/logs
@@ -126,7 +126,7 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KEYCLOAK_HOSTNAME: ${SERVER_NAME}
       KC_PROXY_HEADERS: xforwarded
-      KC_HOSTNAME_STRICT: false
+      KC_HOSTNAME_STRICT: 'false'
 
       KC_HEALTH_ENABLED: 'true'
       KC_HTTP_RELATIVE_PATH: '/keyCloak'
@@ -188,7 +188,7 @@ services:
       URL_FRONT_SYSTEM: ${URL_FRONT_SYSTEM}
 
       KEY_CLOAK_URL: ${KEYCLOAK_REALM_URL}
-      SERVICE_ENABLE_SLL_CONNECT: true
+      SERVICE_ENABLE_SLL_CONNECT: 'true'
     restart: unless-stopped
     networks:
       - flink-network
