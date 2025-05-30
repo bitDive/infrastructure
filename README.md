@@ -15,6 +15,13 @@ This repository contains a Docker Compose setup for deploying the BitDive enviro
 ## URL
 https://bitdive.io/
 
+## Clone the infrastructure repository if you haven't already
+
+```bash
+git clone https://github.com/bitDive/infrastructure.git
+cd infrastructure/docker-compose
+```
+
 ## Prerequisites
 
 Ensure that you have the following installed on your system:
