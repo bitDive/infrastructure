@@ -94,8 +94,6 @@ services:
       - ./postgresConfig/pg_hba.conf:/etc/postgresql/pg_hba.conf
       - ./postgresConfig/postgresql.conf:/etc/postgresql/postgresql.conf
       - ./vault/ssl/postgres-server:/var/lib/postgresql/certs/
-    ports:
-      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
     command:
       - "postgres"
       - "-c"
