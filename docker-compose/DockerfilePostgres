@@ -1,13 +1,19 @@
-# Dockerfile.postgres
 FROM postgres:17.0
 
-# Устанавливаем pg_cron
-RUN apt-get update && apt-get install -y \
-    postgresql-17-cron \
-    postgresql-plpython3-17 \
-    python3-cryptography
+# Отключаем интерактивные подсказки debconf
+ENV DEBIAN_FRONTEND=noninteractive
 
+# (Опционально) чтобы debconf не ругался на отсутствие apt-utils
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends apt-utils \
+    && apt-get install -y \
+       postgresql-17-cron \
+       postgresql-plpython3-17 \
+       python3-cryptography \
+    && rm -rf /var/lib/apt/lists/*
 
-# Устанавливаем `shared_preload_libraries` и указываем базу данных для pg_cron
-RUN echo "shared_preload_libraries = 'pg_cron'" >> /usr/share/postgresql/postgresql.conf.sample && \
-    echo "cron.database_name = 'data-bitdive'" >> /usr/share/postgresql/postgresql.conf.sample
+# Включаем pg_cron и указываем базу
+RUN echo "shared_preload_libraries = 'pg_cron'" \
+      >> /etc/postgresql/postgresql.conf \
+ && echo "cron.database_name = 'data-bitdive'" \
+      >> /etc/postgresql/postgresql.conf

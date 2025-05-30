@@ -54,6 +54,15 @@ services:
   nginx:
     image: nginx:1.27.4
     container_name: nginx-ssl-proxy
+    depends_on:
+      - init-db
+      - minio
+      - keycloak
+      - monitoring-api
+      - flink_load
+      - file-acceptor
+      - frontend
+      - mcp-server
     volumes:
       - ./nginx/default.conf:/etc/nginx/templates/conf.d/default.conf.template
       - ./nginx/:/etc/ssl:ro
@@ -87,10 +96,10 @@ services:
       - ./vault/ssl/postgres-server:/var/lib/postgresql/certs/
     ports:
       - "${POSTGRES_PORT}:${POSTGRES_PORT}"
-    command: >
-      postgres 
-       -c config_file=/etc/postgresql/postgresql.conf
-       && pg_ctl reload
+    command:
+      - "postgres"
+      - "-c"
+      - "config_file=/etc/postgresql/postgresql.conf"
     restart: unless-stopped
     networks:
       - flink-network

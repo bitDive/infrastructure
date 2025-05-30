@@ -150,8 +150,8 @@ docker-compose up init-container-ssl
 
 - **PostgreSQL**: Accessible on port `5432`.
 - **Keycloak**: [https://localhost/keyCloak](https://localhost/keyCloak)
-- **Frontend**: [http://localhost](http://localhost)
-- **flink-load**: [http://localhost/flink-load](http://localhost/flink-load)
+- **Frontend**: [https://localhost](https://localhost)
+- **flink-load**: [https://localhost/flink-load](https://localhost/flink-load)
   
 ## Configuring Keycloak
 https://bitdive.io/docs/keycloak-configuration/
