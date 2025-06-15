@@ -90,8 +90,9 @@ VAULT_CERT_KEYCLOAK_COMMON_NAME=${SERVER_IP}
 VAULT_CERT_KEYCLOAK_ALT_NAME=${SERVER_IP}
 VAULT_CERT_KEYCLOAK_TTL=24h
 
+KEYCLOAK_CONTAINER=https://keycloak:${KEYCLOAK_HTTP_SSL_PORT}/keyCloak
 # Keycloak Realm URL
-KEYCLOAK_REALM_URL=https://keycloak:${KEYCLOAK_HTTP_SSL_PORT}/realms/bitdive/protocol/openid-connect/certs
+KEYCLOAK_REALM_URL=${KEYCLOAK_CONTAINER}/realms/bitdive/protocol/openid-connect/certs
 KEYCLOAK_REALM_URL_NOT_SSL=http://keycloak:8080/realms/bitdive/protocol/openid-connect/certs
 
 # Frontend Configuration
