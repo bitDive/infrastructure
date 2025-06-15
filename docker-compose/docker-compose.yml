@@ -58,10 +58,10 @@ services:
       - init-db
       - minio
       - keycloak
-      - monitoring-api
+     # - monitoring-api
       - flink_load
       - file-acceptor
-      - frontend
+     # - frontend
       - mcp-server
     volumes:
       - ./nginx/default.conf:/etc/nginx/templates/conf.d/default.conf.template
@@ -88,6 +88,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
     volumes:
       - ./postgresql:/var/lib/postgresql/data
       - ./postgresConfig/postgres-init:/docker-entrypoint-initdb.d
@@ -124,6 +126,8 @@ services:
       - ./vault/ssl/postgres-client-keycloak/truststore.jks:/etc/keycloak/postgres-truststore.jks
       - ./vault/ssl/keycloak-https/keystore.jks:/etc/keycloak/https-keystore.jks
       - ./vault/ssl/keycloak-https/truststore.jks:/etc/keycloak/https-truststore.jks
+    ports:
+      - "8443:8443"
     environment:
       KC_DB: postgres
       KC_DB_URL: ${KEYCLOAK_DB_URL}
@@ -196,6 +200,10 @@ services:
 
       KEY_CLOAK_URL: ${KEYCLOAK_REALM_URL}
       SERVICE_ENABLE_SLL_CONNECT: 'true'
+
+      REACT_APP_KEYCLOAK_URL: ${REACT_APP_KEYCLOAK_URL}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
     restart: unless-stopped
     networks:
       - flink-network
@@ -276,6 +284,7 @@ services:
     restart: unless-stopped
     networks:
       - flink-network
+
 
 networks:
   flink-network:
