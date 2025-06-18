@@ -71,6 +71,8 @@ JAVA_KEYSTORE_PASSWORD=your-keystore-password
 JAVA_TRUSTSTORE_PASSWORD=your-truststore-password
 KEYCLOAK_DB_URL=jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/keycloak?ssl=true&sslmode=verify-full&&sslfactory=org.postgresql.ssl.DefaultJavaSSLFactory
 
+TOKEN_SECRET=2IC9hzeMOIPBCyv3Ew5BDCcRPBI8nwuSFQ/jXlQZ+1A=
+
 # Vault User Credentials
 VAULT_LOGIN=username
 VAULT_PASSWORD=password123
@@ -125,6 +127,8 @@ JAVA_TRUSTSTORE_PASSWORD=your-truststore-password
 
 VAULT_LOGIN=your_vault_login
 VAULT_PASSWORD=your_vault_password
+
+TOKEN_SECRET=2IC9hzeMOIPBCyv3Ew5BDCcRPBI8nwuSFQ/jXlQZ+1A=
 ```
 ### Step 1: Start Vault
 

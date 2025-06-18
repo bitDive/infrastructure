@@ -178,130 +178,103 @@ generate_certificate() {
     local keystore_password=$(echo "$config" | yq eval ".services.$service.keystore_password" -)
     local truststore_password=$(echo "$config" | yq eval ".services.$service.truststore_password" -)
 
-    # Проверка наличия паролей для keystore и truststore
+    # Флаги наличия паролей
     local has_keystore_password=false
     local has_truststore_password=false
+    [ -n "$keystore_password" ]    && has_keystore_password=true
+    [ -n "$truststore_password" ]  && has_truststore_password=true
 
-    if [ -n "$keystore_password" ]; then
-        has_keystore_password=true
-    fi
+    # alt_names как CSV
+    local alt_names
+    alt_names=$(echo "$config" | yq eval ".services.$service.alt_names[]" - | paste -sd ',' -)
 
-    if [ -n "$truststore_password" ]; then
-        has_truststore_password=true
-    fi
-
-    # Преобразование alt_names в строку с разделителями запятой
-    local alt_names=$(echo "$config" | yq eval ".services.$service.alt_names[]" - | tr '\n' ',' | sed 's/,$//')
-
-    # Создание временной директории для сервиса
+    # Подготовка директорий
     local temp_service_dir="$TEMP_DIR/$service"
     ensure_directory "$temp_service_dir"
-
-    # Проверка наличия существующего сертификата
     local final_dir="$SSL_BASE_DIR/$service"
     ensure_directory "$final_dir"
 
-    if [ -f "$final_dir/$cert_file" ] && [ -f "$final_dir/$key_file" ] && [ -f "$final_dir/$ca_file" ]; then
+    # Если сертификаты уже есть — выходим
+    if [[ -f "$final_dir/$cert_file" && -f "$final_dir/$key_file" && -f "$final_dir/$ca_file" ]]; then
         echo "Сертификат для $service уже существует в $final_dir, пропускаем генерацию."
-        return
+        return 0
     fi
 
-
-    # Генерация сертификата с помощью Vault PKI
+    # Генерация через Vault PKI
     vault write -format=json pki/issue/bitdive \
         common_name="$common_name" \
         alt_names="$alt_names" \
         ttl="$ttl" > "$temp_service_dir/cert.json"
 
-    # Проверка успешности генерации
-    if [ $? -ne 0 ]; then
-        echo "Ошибка при генерации сертификата через Vault PKI."
-        exit 1
-    fi
-
-    # Извлечение сертификата и ключа
+    # Извлечение в файлы
     jq -r '.data.certificate' "$temp_service_dir/cert.json" > "$temp_service_dir/$cert_file"
     jq -r '.data.private_key' "$temp_service_dir/cert.json" > "$temp_service_dir/$key_file"
-    jq -r '.data.issuing_ca' "$temp_service_dir/cert.json" > "$temp_service_dir/$ca_file"
+    jq -r '.data.issuing_ca'  "$temp_service_dir/cert.json" > "$temp_service_dir/$ca_file"
 
-    # Копирование в конечную директорию
-    cp "$temp_service_dir/$cert_file" "$final_dir/$cert_file"
-    cp "$temp_service_dir/$key_file" "$final_dir/$key_file"
-    cp "$temp_service_dir/$ca_file" "$final_dir/$ca_file"
+    # Скопировать в финальную директорию
+    cp "$temp_service_dir/$cert_file" "$final_dir/"
+    cp "$temp_service_dir/$key_file"  "$final_dir/"
+    cp "$temp_service_dir/$ca_file"   "$final_dir/"
 
-    chmod 600 "$final_dir/$key_file"       # Только чтение и запись для владельца
-    chmod 644 "$final_dir/$cert_file"      # Чтение для всех пользователей
-    chmod 644 "$final_dir/$ca_file"        # Чтение для всех пользователей
+    # Права доступа
+    chmod 600 "$final_dir/$key_file"
+    chmod 644 "$final_dir/$cert_file" "$final_dir/$ca_file"
     chmod 755 "$final_dir"
 
-    # Проверка необходимости создания keystore и truststore
+    # Создание keystore/truststore JKS для Keycloak
     if [[ "$service" == "postgres-client-keycloak" || "$service" == "keycloak-https" ]]; then
         echo "Создание keystore.jks и truststore.jks для $service..."
 
-        # Параметры для keystore
-        local keystore_file="$final_dir/keystore.jks"
-        local alias="$service"
-        local p12_file="$final_dir/$service.p12"
-
-        # Создание PKCS#12 файла, если существует keystore_password
+        # --- keystore.jks ---
         if $has_keystore_password; then
+            local p12_file="$final_dir/$service.p12"
             openssl pkcs12 -export \
                 -inkey "$final_dir/$key_file" \
-                -in "$final_dir/$cert_file" \
+                -in    "$final_dir/$cert_file" \
                 -certfile "$final_dir/$ca_file" \
-                -out "$p12_file" \
-                -name "$alias" \
+                -out   "$p12_file" \
+                -name  "$service" \
                 -password pass:"$keystore_password"
 
-            if [ $? -ne 0 ]; then
-                echo "Ошибка при создании PKCS#12 файла для $service."
-                exit 1
-            fi
-
-            # Импорт PKCS#12 в JKS keystore
-            keytool -importkeystore \
-                -srckeystore "$p12_file" \
-                -srcstoretype PKCS12 \
-                -srcstorepass "$keystore_password" \
-                -destkeystore "$keystore_file" \
-                -deststoretype JKS \
-                -deststorepass "$keystore_password" \
-                -alias "$alias" \
-                -noprompt
-
-            if [ $? -ne 0 ]; then
-                echo "Ошибка при создании keystore.jks для $service."
-                exit 1
-            fi
-
-            # Удаление временного PKCS#12 файла
+            keytool -importkeystore -noprompt \
+                -srckeystore "$p12_file" -srcstoretype PKCS12 -srcstorepass "$keystore_password" \
+                -destkeystore "$final_dir/keystore.jks" -deststorepass "$keystore_password" \
+                -alias "$service"
             rm -f "$p12_file"
-
-            # Установка прав доступа для keystore.jks
-            chmod 644 "$keystore_file"
-
-            echo "keystore.jks создан в $keystore_file"
+            chmod 644 "$final_dir/keystore.jks"
+            echo "keystore.jks создан: $final_dir/keystore.jks"
         fi
 
-        # Создание truststore, если существует truststore_password
+        # --- truststore.jks ---
         if $has_truststore_password; then
-            local truststore_file="$final_dir/truststore.jks"
-            keytool -importcert \
+            local trust_jks="$final_dir/truststore.jks"
+            keytool -importcert -noprompt \
                 -alias "$service-ca" \
-                -file "$final_dir/$ca_file" \
-                -keystore "$truststore_file" \
-                -storepass "$truststore_password" \
-                -noprompt
-
-            if [ $? -ne 0 ]; then
-                echo "Ошибка при создании truststore.jks для $service."
-                exit 1
-            fi
-
-            chmod 644 "$truststore_file"
-
-            echo "truststore.jks создан в $truststore_file"
+                -file  "$final_dir/$ca_file" \
+                -keystore "$trust_jks" \
+                -storepass "$truststore_password"
+            chmod 644 "$trust_jks"
+            echo "truststore.jks создан: $trust_jks"
         fi
+    fi
+
+    # *** Блок создания SMTP-truststore (Zoho) ***
+    if [[ "$service" == "smtp-zoho" ]] && $has_truststore_password; then
+        local tmp_pem="$final_dir/smtp-zoho.pem"
+
+        # Скачиваем все сертификаты с сервера Zoho и сохраняем в smtp-zoho.pem
+        openssl s_client -connect smtp.zoho.eu:465 -showcerts </dev/null \
+          | awk '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/' \
+          > "$tmp_pem"
+
+        # Проверим, что файл не пустой
+        if [[ -s "$tmp_pem" ]]; then
+          echo "Файл smtp-zoho.pem успешно создан и содержит сертификаты."
+        else
+          echo "Ошибка: smtp-zoho.pem пуст или не создан."
+        fi
+
+
     fi
 
     echo "Сертификаты для $service сгенерированы в $final_dir"

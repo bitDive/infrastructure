@@ -124,6 +124,8 @@ services:
       - ./vault/ssl/postgres-client-keycloak/truststore.jks:/etc/keycloak/postgres-truststore.jks
       - ./vault/ssl/keycloak-https/keystore.jks:/etc/keycloak/https-keystore.jks
       - ./vault/ssl/keycloak-https/truststore.jks:/etc/keycloak/https-truststore.jks
+
+      - ./vault/ssl/smtp-zoho/smtp-zoho.pem:/opt/keycloak/truststores
     environment:
       KC_DB: postgres
       KC_DB_URL: ${KEYCLOAK_DB_URL}
@@ -139,6 +141,7 @@ services:
       KC_HTTP_RELATIVE_PATH: '/keyCloak'
       PROXY_ADDRESS_FORWARDING: 'true'
 
+      KC_TRUSTSTORE_PATHS: "/opt/keycloak/truststores"
 
       KC_HTTP_ENABLED: ${KEYCLOAK_HTTP_ENABLED}
       KC_HTTP_SSL_PORT: ${KEYCLOAK_HTTP_SSL_PORT}
@@ -200,6 +203,8 @@ services:
       REACT_APP_KEYCLOAK_URL: ${KEYCLOAK_CONTAINER}
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+
+      TOKEN_SECRET: ${TOKEN_SECRET}
     restart: unless-stopped
     networks:
       - flink-network
@@ -265,7 +270,10 @@ services:
   mcp-server:
     image: frolikoveabitdive/docker-file-mcp-server:latest
     container_name: mcp-server
+    ports:
+      - "8089:8089"
     environment:
+      TOKEN_SECRET: ${TOKEN_SECRET}
       POSTGRES_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASS: ${POSTGRES_PASSWORD}

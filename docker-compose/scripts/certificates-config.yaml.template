@@ -58,6 +58,18 @@ services:
     keystore_password: "${KEYCLOAK_KEY_STORE_PASSWORD}"
     truststore_password: "${KEYCLOAK_TRUST_STORE_PASSWORD}"
 
+  smtp-zoho:
+    common_name: "smtp.zoho.eu"
+    cert_path: "/vault/ssl/smtp-zoho"
+    cert_file: "smtp-zoho.crt"
+    key_file: "smtp-zoho.key"
+    ca_file: "smtp-zoho-ca.crt"
+    ttl: "7200h"
+    alt_names:
+      - "smtp.zoho.eu"
+    keystore_password: ""
+    truststore_password: "${KEYCLOAK_TRUST_STORE_PASSWORD}"
+
   frontend:
     common_name: "bitdive.local"
     alt_names:
