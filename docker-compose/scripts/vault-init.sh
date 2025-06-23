@@ -134,6 +134,35 @@ check_requirements() {
     command -v jq >/dev/null 2>&1 || { echo "jq требуется, но не установлен."; exit 1; }
 }
 
+create_readonly_policy() {
+  if ! vault policy list | grep -qw "readonly-params"; then
+    echo "Создание политики readonly-params..."
+    cat >/tmp/readonly-params.hcl <<'EOF'
+# читать экспортированные Transit-ключи
+path "transit/export/encryption-key/encryption-key" { capabilities = ["read"] }
+path "transit/export/signing-key/signing-key"       { capabilities = ["read"] }
+# (добавьте другие read-пути при необходимости)
+EOF
+    vault policy write readonly-params /tmp/readonly-params.hcl
+    rm /tmp/readonly-params.hcl
+  else
+    echo "Политика readonly-params уже существует."
+  fi
+}
+
+create_readonly_token_role() {
+  if ! vault read auth/token/roles/readonly-infinite >/dev/null 2>&1; then
+    echo "Создаём token-role readonly-infinite (бессрочные токены)..."
+    vault write auth/token/roles/readonly-infinite \
+         allowed_policies="readonly-params" \
+         orphan=true                \
+         period=0                   \
+         token_explicit_max_ttl=0
+  else
+    echo "token-role readonly-infinite уже существует."
+  fi
+}
+
 # Функция для создания директории, если она не существует
 ensure_directory() {
     local dir=$1
@@ -339,6 +368,25 @@ EOF
     fi
 }
 
+create_token_issuer_policy() {
+  if ! vault policy list | grep -qw "token-issuer"; then
+    echo "Создание политики token-issuer..."
+    cat >/tmp/token-issuer.hcl <<'EOF'
+#  ==========  AppRole  ==========
+path "auth/approle/role/readonly-role/role-id"   { capabilities = ["read"] }
+path "auth/approle/role/readonly-role/secret-id" { capabilities = ["update"] }
+
+#  ==========  service-токены  ==========
+path "auth/token/create"                         { capabilities = ["create", "update"] }
+path "auth/token/create/readonly-infinite"       { capabilities = ["create", "update"] }
+EOF
+    vault policy write token-issuer /tmp/token-issuer.hcl
+    rm /tmp/token-issuer.hcl
+  else
+    echo "Политика token-issuer уже существует."
+  fi
+}
+
 # Функция для создания политики transit-user
 create_transit_policy() {
     if ! vault policy list | grep -qw "transit-user"; then
@@ -421,6 +469,10 @@ configure_vault_auth_policies_users() {
         echo "Метод аутентификации userpass уже включен."
     fi
 
+    create_readonly_policy
+    create_readonly_token_role
+    create_token_issuer_policy
+
     # Создание политик
     create_pki_policy
     create_transit_policy
@@ -434,14 +486,14 @@ configure_vault_auth_policies_users() {
 
         vault write auth/userpass/users/$USERNAME \
             password="$PASSWORD" \
-            policies="pki-user,transit-user,kv-user"
+            policies="pki-user,transit-user,kv-user,token-issuer"
 
         # Сохранение информации о пользователе
-        cat <<EOF > "$USER_INFO_FILE"
+cat <<EOF > "$USER_INFO_FILE"
 {
   "username": "$USERNAME",
   "password": "$PASSWORD",
-  "policies": ["pki-user", "transit-user", "kv-user"]
+  "policies": ["pki-user", "transit-user", "kv-user", "token-issuer"]
 }
 EOF
         echo "Пользователь $USERNAME создан с политиками pki-user, transit-user, kv-user."

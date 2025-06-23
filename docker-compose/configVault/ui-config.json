@@ -1,7 +1,7 @@
 {
-  "ui": true,
+  "ui": false,
   "ui_config": {
-    "enabled": true,
+    "enabled": false,
     "header_color": "#1563ff",
     "header_text_color": "white"
   },
