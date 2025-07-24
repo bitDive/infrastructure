@@ -547,7 +547,7 @@ configure_vault_secrets_engines() {
             allow_glob_domains=true \
             allow_any_name=true \
             enforce_hostnames=false \
-            max_ttl="720h"
+            max_ttl="876000h"
     else
         echo "Роль 'bitdive' уже существует."
     fi
