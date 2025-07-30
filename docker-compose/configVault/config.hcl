@@ -15,3 +15,7 @@ cluster_addr = "https://vault-server:8201"
 
 # Настройки для работы с префиксом
 path_prefix = "/vault"
+
+
+default_lease_ttl = "24h"
+max_lease_ttl     = "876000h"

@@ -13,7 +13,7 @@ services:
     cert_file: "public.crt"
     key_file: "private.key"
     ca_file: "ca.crt"
-    ttl: "876000h"
+    ttl: "875999h"
 
   postgres-server:
     common_name: "${POSTGRES_HOST}"
@@ -27,7 +27,7 @@ services:
     cert_file: "server.crt"
     key_file: "server.key"
     ca_file: "ca.crt"
-    ttl: "876000h"
+    ttl: "875999h"
 
   postgres-client-keycloak:
     common_name: "${POSTGRES_USER}"
@@ -35,7 +35,7 @@ services:
     cert_file: "server.crt"
     key_file: "server.key"
     ca_file: "ca.crt"
-    ttl: "876000h"
+    ttl: "875999h"
     alt_names:
       - "postgres-client-keycloak.example.com"
       - "localhost"
@@ -49,7 +49,7 @@ services:
     cert_file: "keycloak.crt"
     key_file: "keycloak.key"
     ca_file: "ca.crt"
-    ttl: "876000h"
+    ttl: "875999h"
     alt_names:
       - "keycloak.example.com"
       - "localhost"
@@ -64,7 +64,7 @@ services:
     cert_file: "smtp-zoho.crt"
     key_file: "smtp-zoho.key"
     ca_file: "smtp-zoho-ca.crt"
-    ttl: "876000h"
+    ttl: "875999h"
     alt_names:
       - "smtp.zoho.eu"
     keystore_password: ""
@@ -82,4 +82,4 @@ services:
     cert_file: "cert.pem"
     key_file: "key.pem"
     ca_file: "ca.crt"
-    ttl: "876000h"
+    ttl: "875999h"

@@ -517,7 +517,7 @@ configure_vault_secrets_engines() {
         echo "Генерация корневого сертификата..."
         vault write pki/root/generate/internal \
             common_name="bitdive" \
-            ttl="87600h" \
+            ttl="876000h" \
             private_key_format="pkcs8"
     else
         echo "Корневой сертификат уже существует."
@@ -547,7 +547,7 @@ configure_vault_secrets_engines() {
             allow_glob_domains=true \
             allow_any_name=true \
             enforce_hostnames=false \
-            max_ttl="876000h"
+            max_ttl="875999h"
     else
         echo "Роль 'bitdive' уже существует."
     fi
