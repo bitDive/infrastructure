@@ -1,0 +1,18 @@
+<yandex>
+    <profiles>
+        <default>
+            <max_query_size>100000000</max_query_size>
+            <max_parser_depth>2000</max_parser_depth>
+            <max_ast_depth>2000</max_ast_depth>
+            <max_ast_elements>500000</max_ast_elements>
+            <max_expanded_ast_elements>1000000</max_expanded_ast_elements>
+        </default>
+    </profiles>
+
+    <!-- Убедись, что нужный user использует профиль default -->
+    <users>
+        <admin>
+            <profile>default</profile>
+        </admin>
+    </users>
+</yandex>

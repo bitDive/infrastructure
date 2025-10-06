@@ -29,6 +29,20 @@ services:
     ca_file: "ca.crt"
     ttl: "875999h"
 
+  clickhouse-server:
+    common_name: "${CLICKHOUSE_HOST}"
+    alt_names:
+      - "clickhouse"
+      - "${CLICKHOUSE_HOST}"
+      - "clickhouse.bitdive.internal"
+      - "localhost"
+      - "${SERVER_IP}"
+    cert_path: "/etc/clickhouse/certs"
+    cert_file: "server.crt"
+    key_file: "server.key"
+    ca_file: "ca.crt"
+    ttl: "875999h"
+
   postgres-client-keycloak:
     common_name: "${POSTGRES_USER}"
     cert_path: "/vault/ssl/postgres-client-keycloak"

@@ -1,0 +1,19 @@
+FROM clickhouse/clickhouse-server:25.9.2
+
+COPY ./vault/ssl/clickhouse-server/ /etc/clickhouse-server/certs/
+
+# Инициализационные скрипты (выполнятся при первом старте, если /var/lib/clickhouse пуст)
+COPY initdb/ /docker-entrypoint-initdb.d/
+
+# Права и каталоги
+RUN set -eux; \
+    mkdir -p /var/lib/clickhouse /var/log/clickhouse-server; \
+    chown -R clickhouse:clickhouse \
+      /etc/clickhouse-server/config.d \
+      /etc/clickhouse-server/certs \
+      /docker-entrypoint-initdb.d \
+      /var/lib/clickhouse \
+      /var/log/clickhouse-server; \
+    chmod 600 /etc/clickhouse-server/certs/server.key; \
+    chmod 644 /etc/clickhouse-server/certs/server.crt /etc/clickhouse-server/certs/ca.crt; \
+    chmod 755 /etc/clickhouse-server/certs

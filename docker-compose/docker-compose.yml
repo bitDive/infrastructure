@@ -10,6 +10,8 @@ services:
     environment:
       VAULT_ADDR: ${VAULT_ADDR}
       VAULT_SKIP_VERIFY: 'true'
+    ports:
+      - "8200:8200"
     volumes:
       - ./vault/data:/vault/file
       - ./vault/logs:/vault/logs
@@ -25,21 +27,59 @@ services:
 
   init-db-ssl:
     image: busybox
+    environment:
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
     volumes:
       - ./vault/ssl/postgres-server:/var/lib/postgresql/certs/
       - ./vault/ssl/postgres-client-keycloak:/var/lib/postgresql-client/certs/
-    command: sh -c "
-      chown -R 999:999 /var/lib/postgresql/certs &&
-      chmod 600 /var/lib/postgresql/certs/server.key &&
-      chmod 644 /var/lib/postgresql/certs/server.crt &&
-      chmod 644 /var/lib/postgresql/certs/ca.crt"
+      - ./vault/ssl/clickhouse-server:/work/certs
+      - ./clickhouse_config/users.d:/work/users.d
+    command: |
+      sh -e -c '
+        echo "[INIT] Настройка сертификатов..."
+        chown -R 999:999 /var/lib/postgresql/certs &&
+        chmod 600 /var/lib/postgresql/certs/server.key &&
+        chmod 644 /var/lib/postgresql/certs/server.crt &&
+        chmod 644 /var/lib/postgresql/certs/ca.crt &&
+
+        chown -R 101:101 /work/certs &&
+        chmod 755 /work/certs &&
+        chmod 600 /work/certs/server.key &&
+        chmod 644 /work/certs/server.crt /work/certs/ca.crt &&
+
+        echo "[INIT] Генерация admin.xml..."
+        if [ -z "$CLICKHOUSE_PASSWORD" ]; then
+          echo "[ERROR] CLICKHOUSE_PASSWORD не задан!" >&2
+          exit 1
+        fi
+
+        cat > /work/users.d/admin.xml <<EOF
+      <clickhouse>
+      <users>
+      <admin>
+      <password>${CLICKHOUSE_PASSWORD}</password>
+      <profile>default</profile>
+      <networks>
+      <ip>::/0</ip>
+      </networks>
+      </admin>
+      </users>
+      </clickhouse>
+      EOF
+      
+      chmod 644 /work/users.d/admin.xml
+      echo "[OK] admin.xml успешно создан:"
+      cat /work/users.d/admin.xml
+      '
     depends_on:
       - postgres
+      - clickhouse
 
   init-container-ssl:
     image: busybox
     depends_on:
-      - init-db
+      - init-db-postgres
+      - init-db-clickhouse
       - minio
       - keycloak
       - monitoring-api
@@ -54,15 +94,6 @@ services:
   nginx:
     image: nginx:1.27.4
     container_name: nginx-ssl-proxy
-    depends_on:
-      - init-db
-      - minio
-      - keycloak
-      - monitoring-api
-      - flink_load
-      - file-acceptor
-      - frontend
-      - mcp-server
     volumes:
       - ./nginx/default.conf:/etc/nginx/templates/conf.d/default.conf.template
       - ./nginx/:/etc/ssl:ro
@@ -84,6 +115,8 @@ services:
       context: .
       dockerfile: DockerfilePostgres
     container_name: postgres-bitdive
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -102,6 +135,25 @@ services:
     networks:
       - flink-network
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.9.2.1  # лучше закрепить версию, а не :latest
+    container_name: clickhouse-bitdive
+    ports:
+      - "8445:8445"
+      - "9440:9440"
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB}
+    volumes:
+      - ./clickhouse_config/users.d:/etc/clickhouse-server/users.d:rw
+      - ./clickhouse_config/config.d/ssl.xml:/etc/clickhouse-server/config.d/ssl.xml:ro
+      - ./vault/ssl/clickhouse-server:/etc/clickhouse-server/certs:ro
+        - ./clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse_logs:/var/log/clickhouse-server
+    networks:
+      - flink-network
+
   minio:
     image: minio/minio:RELEASE.2024-10-02T17-50-41Z
     container_name: minio
@@ -109,6 +161,10 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_DOMAIN: ${MINIO_DOMAIN}
+
+    ports:
+      - "9001:9001"
+      - "9002:9000"
     volumes:
       - ./minio/data:/data
     command: server --console-address "${MINIO_CONSOLE_ADDRESS}" /data
@@ -119,6 +175,8 @@ services:
     image: keycloak/keycloak:26.0
     container_name: keycloak
     restart: unless-stopped
+    ports:
+      - "8443:8443"
     volumes:
       - ./vault/ssl/postgres-client-keycloak/keystore.jks:/etc/keycloak/postgres-keystore.jks
       - ./vault/ssl/postgres-client-keycloak/truststore.jks:/etc/keycloak/postgres-truststore.jks
@@ -153,9 +211,27 @@ services:
     command: [ "start" ]
 
 
-  init-db:
-    image: frolikoveabitdive/bitdive-db-liquibase:latest
-    container_name: bitdive-init-db
+  init-db-clickhouse:
+    image: frolikoveabitdive/bitdive-db-liquibase-clickhouse:latest
+    container_name: bitdive-init-db-clickhouse
+    environment:
+      CH_URL: jdbc:clickhouse://${CLICKHOUSE_HOST}:${CLICKHOUSE_PORT}/${CLICKHOUSE_DB}
+      CH_USER: ${CLICKHOUSE_USER}
+      CH_PASS: ${CLICKHOUSE_PASSWORD}
+
+      VAULT_URL: ${VAULT_ADDR_CONTAINER}
+      VAULT_LOGIN: ${VAULT_LOGIN}
+      VAULT_PASSWORD: ${VAULT_PASSWORD}
+
+      VAULT_CERTIFICATION_DB_COMMON_NAME: ${VAULT_CERT_DB_COMMON_NAME}
+      VAULT_CERTIFICATION_DB_ALT_NAME: ${VAULT_CERT_DB_ALT_NAME}
+      VAULT_CERTIFICATION_DB_TTL: ${VAULT_CERT_DB_TTL}
+    networks:
+      - flink-network
+
+  init-db-postgres:
+    image: frolikoveabitdive/bitdive-db-liquibase-postgres:latest
+    container_name: bitdive-init-db-postgres
     environment:
       POSTGRES_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -179,6 +255,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASS: ${POSTGRES_PASSWORD}
 
+      CH_URL: jdbc:clickhouse://${CLICKHOUSE_HOST}:${CLICKHOUSE_PORT}/${CLICKHOUSE_DB}
+      CH_USER: ${CLICKHOUSE_USER}
+      CH_PASS: ${CLICKHOUSE_PASSWORD}
+
       VAULT_URL: ${VAULT_ADDR_CONTAINER}
       VAULT_LOGIN: ${VAULT_LOGIN}
       VAULT_PASSWORD: ${VAULT_PASSWORD}
@@ -186,6 +266,10 @@ services:
       VAULT_CERTIFICATION_DB_COMMON_NAME: ${VAULT_CERT_DB_COMMON_NAME}
       VAULT_CERTIFICATION_DB_ALT_NAME: ${VAULT_CERT_DB_ALT_NAME}
       VAULT_CERTIFICATION_DB_TTL: ${VAULT_CERT_DB_TTL}
+
+      VAULT_CERTIFICATION_DB_CLICKHOUSE_COMMON_NAME: ${VAULT_CERT_DB_CH_COMMON_NAME}
+      VAULT_CERTIFICATION_DB_CLICKHOUSE_ALT_NAME: ${VAULT_CERT_DB_CH_ALT_NAME}
+      VAULT_CERTIFICATION_DB_CLICKHOUSE_TTL: ${VAULT_CERTIFICATION_DB_CH_TTL}
 
       VAULT_CERTIFICATION_SERVICE_COMMON_NAME: ${VAULT_CERT_SERVICE_COMMON_NAME}
       VAULT_CERTIFICATION_SERVICE_ACCEPTOR_ALT_NAMES: ${VAULT_CERT_SERVICE_ALT_NAMES}
@@ -229,12 +313,18 @@ services:
       POSTGRES_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASS: ${POSTGRES_PASSWORD}
+      CH_URL: jdbc:clickhouse://${CLICKHOUSE_HOST}:${CLICKHOUSE_PORT}/${CLICKHOUSE_DB}
+      CH_USER: ${CLICKHOUSE_USER}
+      CH_PASS: ${CLICKHOUSE_PASSWORD}
       VAULT_URL: ${VAULT_ADDR_CONTAINER}
       VAULT_LOGIN: ${VAULT_LOGIN}
       VAULT_PASSWORD: ${VAULT_PASSWORD}
       VAULT_CERTIFICATION_DB_COMMON_NAME: ${VAULT_CERT_DB_COMMON_NAME}
       VAULT_CERTIFICATION_DB_ALT_NAME: ${VAULT_CERT_DB_ALT_NAME}
       VAULT_CERTIFICATION_DB_TTL: ${VAULT_CERT_DB_TTL}
+      VAULT_CERTIFICATION_DB_CLICKHOUSE_COMMON_NAME: ${VAULT_CERT_DB_CH_COMMON_NAME}
+      VAULT_CERTIFICATION_DB_CLICKHOUSE_ALT_NAME: ${VAULT_CERT_DB_CH_ALT_NAME}
+      VAULT_CERTIFICATION_DB_CLICKHOUSE_TTL: ${VAULT_CERTIFICATION_DB_CH_TTL}
       TOTAL_PROCESS_MEMORY: ${TOTAL_PROCESS_MEMORY}
 
     depends_on:
