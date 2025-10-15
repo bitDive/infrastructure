@@ -51,6 +51,12 @@ POSTGRES_DB=data-bitdive
 POSTGRES_HOST=postgres-bitdive
 POSTGRES_PORT=5432
 
+CLICKHOUSE_USER=user_ch
+CLICKHOUSE_PASSWORD=your_ch_password
+CLICKHOUSE_HOST=clickhouse-bitdive
+CLICKHOUSE_DB=bitdive
+CLICKHOUSE_PORT=8445
+
 # MinIO Configuration
 MINIO_ROOT_USER=your_minio_user
 MINIO_ROOT_PASSWORD=your_minio_passwor
@@ -134,6 +140,9 @@ POSTGRES_PASSWORD=your_postgres_password
 MINIO_ROOT_USER=your_minio_user
 MINIO_ROOT_PASSWORD=your_minio_password
 
+CLICKHOUSE_USER=user_ch
+CLICKHOUSE_PASSWORD=your_ch_password
+
 KEYCLOAK_ADMIN=your_keycloak_user
 KEYCLOAK_ADMIN_PASSWORD=your_keycloak_password
 
@@ -163,7 +172,7 @@ Wait until Vault is fully initialized.
 Run the following command to set up SSL for the PostgreSQL service:
 
 ```bash
-docker-compose up init-db-ssl
+docker-compose up -d init-db-ssl
 ```
 
 Wait until the process completes.
@@ -173,7 +182,7 @@ Wait until the process completes.
 Finally, start all remaining services with:
 
 ```bash
-docker-compose up init-container-ssl
+docker-compose up -d init-container-ssl
 ```
 
 ## Accessing the Services

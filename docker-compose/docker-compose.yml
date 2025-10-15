@@ -10,8 +10,6 @@ services:
     environment:
       VAULT_ADDR: ${VAULT_ADDR}
       VAULT_SKIP_VERIFY: 'true'
-    ports:
-      - "8200:8200"
     volumes:
       - ./vault/data:/vault/file
       - ./vault/logs:/vault/logs
@@ -108,6 +106,16 @@ services:
       exec nginx -g 'daemon off;'"
     networks:
       - flink-network
+    depends_on:
+      - init-db-postgres
+      - init-db-clickhouse
+      - minio
+      - keycloak
+      - monitoring-api
+      - flink_load
+      - file-acceptor
+      - frontend
+      - mcp-server
 
 
   postgres:
@@ -115,8 +123,6 @@ services:
       context: .
       dockerfile: DockerfilePostgres
     container_name: postgres-bitdive
-    ports:
-      - "5432:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -138,9 +144,6 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:25.9.2.1  # лучше закрепить версию, а не :latest
     container_name: clickhouse-bitdive
-    ports:
-      - "8445:8445"
-      - "9440:9440"
     environment:
       CLICKHOUSE_USER: ${CLICKHOUSE_USER}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
@@ -149,7 +152,7 @@ services:
       - ./clickhouse_config/users.d:/etc/clickhouse-server/users.d:rw
       - ./clickhouse_config/config.d/ssl.xml:/etc/clickhouse-server/config.d/ssl.xml:ro
       - ./vault/ssl/clickhouse-server:/etc/clickhouse-server/certs:ro
-        - ./clickhouse_data:/var/lib/clickhouse
+      #- ./clickhouse_data:/var/lib/clickhouse
       - ./clickhouse_logs:/var/log/clickhouse-server
     networks:
       - flink-network
@@ -161,10 +164,6 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
       MINIO_DOMAIN: ${MINIO_DOMAIN}
-
-    ports:
-      - "9001:9001"
-      - "9002:9000"
     volumes:
       - ./minio/data:/data
     command: server --console-address "${MINIO_CONSOLE_ADDRESS}" /data
@@ -175,8 +174,6 @@ services:
     image: keycloak/keycloak:26.0
     container_name: keycloak
     restart: unless-stopped
-    ports:
-      - "8443:8443"
     volumes:
       - ./vault/ssl/postgres-client-keycloak/keystore.jks:/etc/keycloak/postgres-keystore.jks
       - ./vault/ssl/postgres-client-keycloak/truststore.jks:/etc/keycloak/postgres-truststore.jks
@@ -326,7 +323,6 @@ services:
       VAULT_CERTIFICATION_DB_CLICKHOUSE_ALT_NAME: ${VAULT_CERT_DB_CH_ALT_NAME}
       VAULT_CERTIFICATION_DB_CLICKHOUSE_TTL: ${VAULT_CERTIFICATION_DB_CH_TTL}
       TOTAL_PROCESS_MEMORY: ${TOTAL_PROCESS_MEMORY}
-
     depends_on:
       - minio
     networks:
@@ -363,6 +359,7 @@ services:
       REACT_APP_KEYCLOAK_REALM: ${REACT_APP_KEYCLOAK_REALM}
       REACT_APP_KEYCLOAK_CLIENT_ID: ${REACT_APP_KEYCLOAK_CLIENT_ID}
       GENERATE_SOURCEMAP: ${GENERATE_SOURCEMAP}
+      REACT_APP_BASE_URL: ${URL_FRONT_SYSTEM}
     restart: unless-stopped
     networks:
       - flink-network
