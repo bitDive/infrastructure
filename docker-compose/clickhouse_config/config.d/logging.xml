@@ -1,0 +1,15 @@
+<yandex>
+    <logger>
+        <level>none</level> <!-- полностью отключает логи -->
+        <log>/dev/null</log>
+        <errorlog>/dev/null</errorlog>
+    </logger>
+
+    <!-- Отключаем внутренние системные логи -->
+    <query_log remove="remove"/>
+    <query_thread_log remove="remove"/>
+    <trace_log remove="remove"/>
+    <part_log remove="remove"/>
+    <metric_log remove="remove"/>
+    <text_log remove="remove"/>
+</yandex>
