@@ -1,0 +1,4 @@
+<clickhouse>
+    <tmp_path>/var/lib/clickhouse/tmp/</tmp_path>
+    <max_temporary_data_on_disk_size>200Gi</max_temporary_data_on_disk_size>
+</clickhouse>

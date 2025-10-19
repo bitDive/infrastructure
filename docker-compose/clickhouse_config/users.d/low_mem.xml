@@ -1,0 +1,17 @@
+<clickhouse>
+    <profiles>
+        <low_mem>
+            <max_memory_usage>6000000000</max_memory_usage>
+            <max_bytes_before_external_group_by>2000000000</max_bytes_before_external_group_by>
+            <max_bytes_before_external_sort>2000000000</max_bytes_before_external_sort>
+            <join_algorithm>grace_hash</join_algorithm>
+            <max_threads>4</max_threads>
+            <max_block_size>16384</max_block_size>
+        </low_mem>
+    </profiles>
+    <users>
+        <user_ch>
+            <profile>low_mem</profile>
+        </user_ch>
+    </users>
+</clickhouse>
