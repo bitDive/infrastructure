@@ -108,7 +108,7 @@ services:
             <networks>
               <ip>::/0</ip>
             </networks>
-            <password><![CDATA[your_ch_password]]></password>
+            <password>${CLICKHOUSE_PASSWORD}</password>
             <quota>default</quota>
             <named_collection_control>1</named_collection_control>
           </user_ch>
