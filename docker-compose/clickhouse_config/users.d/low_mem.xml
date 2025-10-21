@@ -9,9 +9,4 @@
             <max_block_size>16384</max_block_size>
         </low_mem>
     </profiles>
-    <users>
-        <user_ch>
-            <profile>low_mem</profile>
-        </user_ch>
-    </users>
 </clickhouse>

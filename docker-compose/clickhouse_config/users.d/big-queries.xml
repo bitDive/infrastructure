@@ -8,11 +8,4 @@
             <max_expanded_ast_elements>1000000</max_expanded_ast_elements>
         </default>
     </profiles>
-
-    <!-- Убедись, что нужный user использует профиль default -->
-    <users>
-        <admin>
-            <profile>default</profile>
-        </admin>
-    </users>
 </yandex>

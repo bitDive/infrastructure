@@ -32,7 +32,6 @@ services:
       - ./vault/ssl/postgres-server:/var/lib/postgresql/certs/
       - ./vault/ssl/postgres-client-keycloak:/var/lib/postgresql-client/certs/
       - ./vault/ssl/clickhouse-server:/work/certs
-      - ./clickhouse_config/users.d:/work/users.d
       - ./postgresConfig/postgres-init:/work/postgres-init
     command: |
       sh -e -c '
@@ -46,33 +45,6 @@ services:
         chmod 755 /work/certs &&
         chmod 600 /work/certs/server.key &&
         chmod 644 /work/certs/server.crt /work/certs/ca.crt &&
-
-        echo "[INIT] Генерация admin.xml..."
-        if [ -z "$CLICKHOUSE_PASSWORD" ]; then
-          echo "[ERROR] CLICKHOUSE_PASSWORD не задан!" >&2
-          exit 1
-        fi
-
-        cat > /work/users.d/admin.xml <<EOF
-      <clickhouse>
-      <users>
-      <admin>
-      <password>${CLICKHOUSE_PASSWORD}</password>
-      <profile>default</profile>
-      <networks>
-      <ip>::/0</ip>
-      </networks>
-      <access_management>1</access_management>
-      <named_collection_control>1</named_collection_control>
-      <show_named_collections>1</show_named_collections>
-      <show_named_collections_secrets>1</show_named_collections_secrets>
-      </admin>
-      </users>
-      </clickhouse>
-      EOF
-      
-      chmod 644 /work/users.d/admin.xml
-      echo "[OK] admin.xml успешно создан"
 
       echo "[INIT] Генерация schema.sql..."
       if [ -z "$CLICKHOUSE_PG_USER_PASSWORD" ]; then
@@ -95,34 +67,12 @@ services:
       
       chmod 644 /work/postgres-init/01_schema.sql
       echo "[OK] schema.sql успешно создан"
-
-      echo "[INIT] Генерация default-user.xml..."
-      cat > /work/users.d/default-user.xml <<EOF
-      <clickhouse>
-        <users>
-          <default remove="remove">
-          </default>
-          
-          <user_ch>
-            <profile>default</profile>
-            <networks>
-              <ip>::/0</ip>
-            </networks>
-            <password>${CLICKHOUSE_PASSWORD}</password>
-            <quota>default</quota>
-            <named_collection_control>1</named_collection_control>
-          </user_ch>
-        </users>
-      </clickhouse>
-      EOF
-      
-      chmod 644 /work/users.d/default-user.xml
-      echo "[OK] default-user.xml успешно создан"
       '
     depends_on:
+      - init-clickhouse-collections
       - postgres
       - clickhouse
-      - init-clickhouse-collections
+
 
   init-container-ssl:
     image: busybox
@@ -194,18 +144,25 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:25.9.2.1  # лучше закрепить версию, а не :latest
     container_name: clickhouse-bitdive
+    ports:
+      - "8445:8445"
+      - "9440:9440"
     environment:
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
       PGSSLMODE: disable
-      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
       CLICKHOUSE_DB: ${CLICKHOUSE_DB}
+      CLICKHOUSE_USER_PASSWORD: ${CLICKHOUSE_PASSWORD}
     volumes:
-      - ./clickhouse_config/users.d:/etc/clickhouse-server/users.d:rw
+      # Монтируем только конкретные конфигурационные файлы в режиме read-only
+      - ./clickhouse_config/users.d/admin.xml:/etc/clickhouse-server/users.d/admin.xml:ro
+      - ./clickhouse_config/users.d/user_ch.xml:/etc/clickhouse-server/users.d/user_ch.xml:ro
+      - ./clickhouse_config/users.d/big-queries.xml:/etc/clickhouse-server/users.d/big-queries.xml:ro
+      - ./clickhouse_config/users.d/low_mem.xml:/etc/clickhouse-server/users.d/low_mem.xml:ro
       - ./clickhouse_config/config.d/ssl.xml:/etc/clickhouse-server/config.d/ssl.xml:ro
       - ./clickhouse_config/config.d/tmp.xml:/etc/clickhouse-server/config.d/tmp.xml:ro
       - ./vault/ssl/clickhouse-server:/etc/clickhouse-server/certs:ro
-      - ./clickhouse_data:/var/lib/clickhouse
+#      - ./clickhouse_data:/var/lib/clickhouse
       - ./clickhouse_logs:/var/log/clickhouse-server
       - ./clickhouse_tmp:/var/lib/clickhouse/tmp:rw
     networks:
@@ -265,9 +222,11 @@ services:
   init-db-clickhouse:
     image: frolikoveabitdive/bitdive-db-liquibase-clickhouse:latest
     container_name: bitdive-init-db-clickhouse
+    depends_on:
+      - init-clickhouse-collections
     environment:
       CH_URL: jdbc:clickhouse://${CLICKHOUSE_HOST}:${CLICKHOUSE_PORT}/${CLICKHOUSE_DB}
-      CH_USER: ${CLICKHOUSE_USER}
+      CH_USER: admin
       CH_PASS: ${CLICKHOUSE_PASSWORD}
 
       VAULT_URL: ${VAULT_ADDR_CONTAINER}
@@ -283,27 +242,60 @@ services:
   init-clickhouse-collections:
     image: clickhouse/clickhouse-server:25.9.2.1
     container_name: init-clickhouse-collections
+    depends_on:
+      - clickhouse
     environment:
       CLICKHOUSE_HOST: ${CLICKHOUSE_HOST}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB}
       CLICKHOUSE_PG_USER_PASSWORD: ${CLICKHOUSE_PG_USER_PASSWORD}
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_DB: ${POSTGRES_DB}
-    entrypoint: ["/bin/bash", "-c"]
-    command: |
-      "
-        echo '[INIT] Ожидание доступности ClickHouse...'
+    volumes:
+      - ./vault/ssl/clickhouse-server:/etc/clickhouse-server/certs:ro
+    command:
+      - /bin/bash
+      - -c
+      - |
+        echo '[INIT] Ожидание доступности ClickHouse (порт 9000)...'
         sleep 10
-        until clickhouse-client --host $${CLICKHOUSE_HOST} --port 9000 --user admin --password $${CLICKHOUSE_PASSWORD} --query 'SELECT 1' 2>/dev/null; do
+        until clickhouse-client \
+              --host $${CLICKHOUSE_HOST} \
+              --port 9000 \
+              --user $${CLICKHOUSE_USER} \
+              --password $${CLICKHOUSE_PASSWORD} \
+              --query 'SELECT 1' \
+              2>/dev/null; do
           echo 'ClickHouse недоступен, ждем...'
           sleep 3
         done
-        
+
+        echo '[INIT] Создание базы данных $${CLICKHOUSE_DB}...'
+        clickhouse-client \
+              --host $${CLICKHOUSE_HOST} \
+              --port 9000 \
+              --user $${CLICKHOUSE_USER} \
+              --password $${CLICKHOUSE_PASSWORD} \
+              --query "CREATE DATABASE IF NOT EXISTS $${CLICKHOUSE_DB}"
+
         echo '[INIT] Создание named collection postgres_creds...'
-        clickhouse-client --host $${CLICKHOUSE_HOST} --port 9000 --user admin --password $${CLICKHOUSE_PASSWORD} --query \"CREATE NAMED COLLECTION IF NOT EXISTS postgres_creds AS host = '$${POSTGRES_HOST}', port = 5432, user = 'clickhouse_user', password = '$${CLICKHOUSE_PG_USER_PASSWORD}', database = '$${POSTGRES_DB}'\" && echo '[OK] Named collection создана' || echo '[WARN] Не удалось создать коллекцию'
-      "
+        clickhouse-client \
+              --host $${CLICKHOUSE_HOST} \
+              --port 9000 \
+              --user $${CLICKHOUSE_USER} \
+              --password $${CLICKHOUSE_PASSWORD} \
+              --query "
+                CREATE NAMED COLLECTION IF NOT EXISTS postgres_creds
+                AS host = '$${POSTGRES_HOST}', port = 5432,
+                   user = 'clickhouse_user', password = '$${CLICKHOUSE_PG_USER_PASSWORD}',
+                   database = '$${POSTGRES_DB}';
+              "
+
+        echo '[OK] Инициализация ClickHouse завершена'
     networks:
       - flink-network
+
 
   init-db-postgres:
     image: frolikoveabitdive/bitdive-db-liquibase-postgres:latest
