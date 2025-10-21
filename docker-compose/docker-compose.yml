@@ -162,7 +162,7 @@ services:
       - ./clickhouse_config/config.d/ssl.xml:/etc/clickhouse-server/config.d/ssl.xml:ro
       - ./clickhouse_config/config.d/tmp.xml:/etc/clickhouse-server/config.d/tmp.xml:ro
       - ./vault/ssl/clickhouse-server:/etc/clickhouse-server/certs:ro
-#      - ./clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse_data:/var/lib/clickhouse
       - ./clickhouse_logs:/var/log/clickhouse-server
       - ./clickhouse_tmp:/var/lib/clickhouse/tmp:rw
     networks:
