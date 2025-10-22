@@ -1,9 +1,7 @@
 services:
 
   vault:
-    build:
-      context: .
-      dockerfile: DockerfileVault
+    image: frolikoveabitdive/bitdive-vault:latest
     container_name: vault-server
     environment:
       VAULT_ADDR: ${VAULT_ADDR}
@@ -119,9 +117,7 @@ services:
 
 
   postgres:
-    build:
-      context: .
-      dockerfile: DockerfilePostgres
+    image: frolikoveabitdive/bitdive-postgres:latest
     container_name: postgres-bitdive
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
