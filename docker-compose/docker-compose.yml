@@ -144,9 +144,6 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:25.9.2.1  # лучше закрепить версию, а не :latest
     container_name: clickhouse-bitdive
-    ports:
-      - "8445:8445"
-      - "9440:9440"
     environment:
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
       PGSSLMODE: disable
