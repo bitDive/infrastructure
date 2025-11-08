@@ -43,6 +43,11 @@ services:
         chmod 755 /work/certs &&
         chmod 600 /work/certs/server.key &&
         chmod 644 /work/certs/server.crt /work/certs/ca.crt &&
+      
+        chown -R 1000:0 /var/lib/postgresql-client/certs &&
+        chmod 644 /var/lib/postgresql-client/certs/ca.crt &&
+        chmod 644 /var/lib/postgresql-client/certs/server.key &&
+        chmod 644 /var/lib/postgresql-client/certs/server.crt &&
 
       echo "[INIT] Генерация schema.sql..."
       if [ -z "$CLICKHOUSE_PG_USER_PASSWORD" ]; then
@@ -183,7 +188,7 @@ services:
       - ./vault/ssl/postgres-client-keycloak/truststore.jks:/etc/keycloak/postgres-truststore.jks
       - ./vault/ssl/keycloak-https/keystore.jks:/etc/keycloak/https-keystore.jks
       - ./vault/ssl/keycloak-https/truststore.jks:/etc/keycloak/https-truststore.jks
-
+      - ./vault/ssl/postgres-client-keycloak:/opt/keycloak/postgres:ro
       - ./vault/ssl/smtp-zoho/smtp-zoho.pem:/opt/keycloak/truststores
     environment:
       KC_DB: postgres
@@ -195,18 +200,13 @@ services:
       KEYCLOAK_HOSTNAME: ${SERVER_NAME}
       KC_PROXY_HEADERS: xforwarded
       KC_HOSTNAME_STRICT: 'false'
-
       KC_HEALTH_ENABLED: 'true'
       KC_HTTP_RELATIVE_PATH: '/keyCloak'
       PROXY_ADDRESS_FORWARDING: 'true'
-
-      KC_TRUSTSTORE_PATHS: "/opt/keycloak/truststores"
-
       KC_HTTP_ENABLED: ${KEYCLOAK_HTTP_ENABLED}
       KC_HTTP_SSL_PORT: ${KEYCLOAK_HTTP_SSL_PORT}
       KC_HTTPS_KEY_STORE_FILE: "/etc/keycloak/https-keystore.jks"
       KC_HTTPS_KEY_STORE_PASSWORD: "${KEYCLOAK_KEY_STORE_PASSWORD}"
-      JAVA_OPTS_APPEND: "-Djavax.net.ssl.keyStore=/etc/keycloak/postgres-keystore.jks -Djavax.net.ssl.keyStorePassword=${JAVA_KEYSTORE_PASSWORD} -Djavax.net.ssl.trustStore=/etc/keycloak/postgres-truststore.jks -Djavax.net.ssl.trustStorePassword=${JAVA_TRUSTSTORE_PASSWORD}"
     networks:
       - flink-network
     command: [ "start" ]
@@ -434,18 +434,7 @@ services:
     image: frolikoveabitdive/docker-file-mcp-server:latest
     container_name: mcp-server
     environment:
-      TOKEN_SECRET: ${TOKEN_SECRET}
-      POSTGRES_URL: jdbc:postgresql://${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASS: ${POSTGRES_PASSWORD}
-
-      VAULT_URL: ${VAULT_ADDR_CONTAINER}
-      VAULT_LOGIN: ${VAULT_LOGIN}
-      VAULT_PASSWORD: ${VAULT_PASSWORD}
-
-      VAULT_CERTIFICATION_DB_COMMON_NAME: ${VAULT_CERT_DB_COMMON_NAME}
-      VAULT_CERTIFICATION_DB_ALT_NAME: ${VAULT_CERT_DB_ALT_NAME}
-      VAULT_CERTIFICATION_DB_TTL: ${VAULT_CERT_DB_TTL}
+      MONITORING_API_URL: https://monitoring-api:8083
     restart: unless-stopped
     networks:
       - flink-network
