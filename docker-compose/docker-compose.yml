@@ -159,6 +159,8 @@ services:
       - ./clickhouse_config/users.d/low_mem.xml:/etc/clickhouse-server/users.d/low_mem.xml:ro
       - ./clickhouse_config/config.d/ssl.xml:/etc/clickhouse-server/config.d/ssl.xml:ro
       - ./clickhouse_config/config.d/tmp.xml:/etc/clickhouse-server/config.d/tmp.xml:ro
+      - ./clickhouse_config/config.d/20-disable-logs.xml:/etc/clickhouse-server/config.d/20-disable-logs.xml:ro
+      - ./clickhouse_config/config.d/logging.xml:/etc/clickhouse-server/config.d/logging.xml:ro
       - ./vault/ssl/clickhouse-server:/etc/clickhouse-server/certs:ro
       - ./clickhouse_data:/var/lib/clickhouse
       - ./clickhouse_logs:/var/log/clickhouse-server
