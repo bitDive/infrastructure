@@ -2,7 +2,7 @@
     <http_port>0</http_port>
     <tcp_port>0</tcp_port>
 
-    <!-- Удаляем interserver HTTP из базового конфига (если он там есть) -->
+    <!-- Remove interserver HTTP from base config (if present) -->
     <interserver_http_port remove="1"/>
     <interserver_http_host remove="1"/>
 </clickhouse>

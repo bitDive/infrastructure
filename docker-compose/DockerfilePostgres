@@ -1,9 +1,9 @@
 FROM postgres:17.0
 
-# Отключаем интерактивные подсказки debconf
+# Disable interactive debconf prompts
 ENV DEBIAN_FRONTEND=noninteractive
 
-# (Опционально) чтобы debconf не ругался на отсутствие apt-utils
+# (Optional) prevent debconf warnings about missing apt-utils
 RUN apt-get update \
     && apt-get install -y --no-install-recommends apt-utils \
     && apt-get install -y \
@@ -12,7 +12,7 @@ RUN apt-get update \
        python3-cryptography \
     && rm -rf /var/lib/apt/lists/*
 
-# Включаем pg_cron и указываем базу
+# Enable pg_cron and specify the database
 RUN echo "shared_preload_libraries = 'pg_cron'" \
       >> /etc/postgresql/postgresql.conf \
  && echo "cron.database_name = 'data-bitdive'" \

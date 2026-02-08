@@ -1,5 +1,5 @@
 <clickhouse>
-    <!-- При внешних подключениях -->
+    <!-- For external connections -->
     <listen_host>0.0.0.0</listen_host>
 
     <https_port>8445</https_port>

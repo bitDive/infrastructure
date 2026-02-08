@@ -13,7 +13,7 @@ ui = false
 api_addr = "https://vault.localhost"
 cluster_addr = "https://vault-server:8201"
 
-# Настройки для работы с префиксом
+# Settings for path prefix
 path_prefix = "/vault"
 
 

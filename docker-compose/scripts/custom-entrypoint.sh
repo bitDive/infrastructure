@@ -3,8 +3,8 @@
 
 set -e
 
-# Запуск скрипта инициализации Vault
+# Run Vault initialization script
 /vault/scripts/vault-init.sh
 
-# Поддержание контейнера активным
+# Keep the container running
 tail -f /dev/null

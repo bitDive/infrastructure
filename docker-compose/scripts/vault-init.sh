@@ -3,24 +3,24 @@
 
 set -e
 
-# Считываем переменные из файла localhost.env
+# Read variables from localhost.env file
 if [ -f "/vault/.env" ]; then
-  # Создаем временный файл без лишних символов
+  # Create a temporary file without extra characters
   sed 's/\r$//' /vault/.env | sed '/^\s*$/d' > /tmp/.env.cleaned
 
-  # Удаляем лишние пробелы и переходы на новую строку внутри значений
+  # Remove extra spaces and line breaks inside values
   sed -i 's/^[ \t]*//;s/[ \t]*$//' /tmp/.env.cleaned
 
-  # Загружаем переменные с интерполяцией
+  # Load variables with interpolation
   set -a
   . /tmp/.env.cleaned
   set +a
 
-  # Удаляем временный файл
+  # Remove temporary file
   rm /tmp/.env.cleaned
 fi
 
-# Проверяем, что переменные установлены
+# Verify that variables are set
 
 
 UNSEAL_KEYS_FILE="/vault/keys/unseal-keys.json"
@@ -29,97 +29,97 @@ CERT_FILE="$CERT_DIR/vault.crt"
 KEY_FILE="$CERT_DIR/vault.key"
 USER_INFO_FILE="/vault/keys/user-info.json"
 
-# Функция для генерации самоподписанного сертификата
+# Function to generate a self-signed certificate
 generate_self_signed_cert() {
-  echo "Генерация самоподписанного SSL-сертификата..."
+  echo "Generating self-signed SSL certificate..."
   mkdir -p "$CERT_DIR"
   openssl req -new -newkey rsa:2048 -days 365 -nodes -x509 \
     -subj "/C=RU/ST=YourRegion/L=YourCity/O=YourOrganization/OU=YourDepartment/CN=${SERVER_IP}" \
     -keyout "$KEY_FILE" \
     -out "$CERT_FILE"
-  echo "Самоподписанный сертификат и ключ сгенерированы."
+  echo "Self-signed certificate and key have been generated."
 }
 
-# Проверка наличия сертификата и ключа
+# Check if certificate and key exist
 if [ ! -f "$CERT_FILE" ] || [ ! -f "$KEY_FILE" ]; then
-  echo "SSL-сертификат или ключ не найдены. Генерируем самоподписанные сертификаты..."
+  echo "SSL certificate or key not found. Generating self-signed certificates..."
   generate_self_signed_cert
 else
-  echo "SSL-сертификат и ключ найдены."
+  echo "SSL certificate and key found."
 fi
 
-# Запуск Vault-сервера в фоновом режиме
+# Start Vault server in background
 vault server -config=/vault/config/config.hcl &
 
-# Ожидание запуска Vault-сервера
-echo "Ожидание запуска Vault-сервера..."
+# Wait for Vault server to start
+echo "Waiting for Vault server to start..."
 while ! nc -z localhost 8200; do
   sleep 0.1
 done
-echo "Vault-сервер запущен."
+echo "Vault server started."
 
-# Функция для разблокировки Vault
+# Function to unseal Vault
 unseal_vault() {
-  echo "Разблокировка Vault с ключом: $1"
+  echo "Unsealing Vault with key: $1"
   vault operator unseal "$1"
-  echo "Ключ разблокировки применен."
+  echo "Unseal key applied."
 }
 
-# Проверка, инициализирован ли Vault
+# Check if Vault is initialized
 init_status=$(vault status -format=json | jq -r '.initialized')
 
 if [ "$init_status" = "true" ]; then
-  echo "Vault уже инициализирован. Переходим к разблокировке."
+  echo "Vault is already initialized. Proceeding to unseal."
 
-  # Проверка наличия файла с ключами разблокировки
+  # Check if unseal keys file exists
   if [ -f "$UNSEAL_KEYS_FILE" ]; then
-    # Считывание ключей разблокировки из файла
+    # Read unseal keys from file
     UNSEAL_KEY_1=$(jq -r '.unseal_keys_b64[0]' "$UNSEAL_KEYS_FILE")
     UNSEAL_KEY_2=$(jq -r '.unseal_keys_b64[1]' "$UNSEAL_KEYS_FILE")
     UNSEAL_KEY_3=$(jq -r '.unseal_keys_b64[2]' "$UNSEAL_KEYS_FILE")
 
-    # Разблокировка Vault
+    # Unseal Vault
     unseal_vault "$UNSEAL_KEY_1"
     unseal_vault "$UNSEAL_KEY_2"
     unseal_vault "$UNSEAL_KEY_3"
   else
-    echo "Ошибка: Файл с ключами разблокировки не найден. Невозможно разблокировать Vault."
+    echo "Error: Unseal keys file not found. Unable to unseal Vault."
     exit 1
   fi
 else
-  echo "Инициализация Vault..."
+  echo "Initializing Vault..."
 
-  # Инициализация Vault и сохранение ключей разблокировки и корневого токена
+  # Initialize Vault and save unseal keys and root token
   init_output=$(vault operator init -format=json -key-shares=5 -key-threshold=3)
 
-  # Проверка успешности инициализации
+  # Check if initialization was successful
   if echo "$init_output" | jq -e . >/dev/null 2>&1; then
-    echo "Vault успешно инициализирован."
+    echo "Vault successfully initialized."
   else
-    echo "Ошибка при инициализации Vault:"
+    echo "Error during Vault initialization:"
     echo "$init_output"
     exit 1
   fi
 
-  # Сохранение ключей разблокировки и корневого токена в файл
+  # Save unseal keys and root token to file
   mkdir -p "$(dirname "$UNSEAL_KEYS_FILE")"
   echo "$init_output" > "$UNSEAL_KEYS_FILE"
   chmod 600 "$UNSEAL_KEYS_FILE"
 
-  # Извлечение ключей разблокировки
+  # Extract unseal keys
   UNSEAL_KEY_1=$(echo "$init_output" | jq -r '.unseal_keys_b64[0]')
   UNSEAL_KEY_2=$(echo "$init_output" | jq -r '.unseal_keys_b64[1]')
   UNSEAL_KEY_3=$(echo "$init_output" | jq -r '.unseal_keys_b64[2]')
 
-  # Разблокировка Vault
+  # Unseal Vault
   unseal_vault "$UNSEAL_KEY_1"
   unseal_vault "$UNSEAL_KEY_2"
   unseal_vault "$UNSEAL_KEY_3"
 
-  echo "Vault разблокирован и готов к использованию."
+  echo "Vault is unsealed and ready to use."
 fi
 
-# Экспорт VAULT_TOKEN для дальнейших команд
+# Export VAULT_TOKEN for subsequent commands
 export VAULT_TOKEN=$(jq -r '.root_token' "$UNSEAL_KEYS_FILE")
 
 VAULT_ADDR=${VAULT_ADDR}
@@ -127,57 +127,57 @@ CONFIG_FILE="/vault/scripts/certificates-config.yaml"
 TEMP_DIR="/tmp/certs"
 SSL_BASE_DIR="/vault/ssl"
 
-# Функция для проверки необходимых инструментов
+# Function to check required tools
 check_requirements() {
-    command -v vault >/dev/null 2>&1 || { echo "vault требуется, но не установлен."; exit 1; }
-    command -v yq >/dev/null 2>&1 || { echo "yq требуется, но не установлен."; exit 1; }
-    command -v jq >/dev/null 2>&1 || { echo "jq требуется, но не установлен."; exit 1; }
+    command -v vault >/dev/null 2>&1 || { echo "vault is required but not installed."; exit 1; }
+    command -v yq >/dev/null 2>&1 || { echo "yq is required but not installed."; exit 1; }
+    command -v jq >/dev/null 2>&1 || { echo "jq is required but not installed."; exit 1; }
 }
 
 create_readonly_policy() {
   if ! vault policy list | grep -qw "readonly-params"; then
-    echo "Создание политики readonly-params..."
+    echo "Creating readonly-params policy..."
     cat >/tmp/readonly-params.hcl <<'EOF'
-# читать экспортированные Transit-ключи
+# read exported Transit keys
 path "transit/export/encryption-key/encryption-key" { capabilities = ["read"] }
 path "transit/export/signing-key/signing-key"       { capabilities = ["read"] }
-# (добавьте другие read-пути при необходимости)
+# (add other read paths as needed)
 EOF
     vault policy write readonly-params /tmp/readonly-params.hcl
     rm /tmp/readonly-params.hcl
   else
-    echo "Политика readonly-params уже существует."
+    echo "Policy readonly-params already exists."
   fi
 }
 
 create_readonly_token_role() {
   if ! vault read auth/token/roles/readonly-infinite >/dev/null 2>&1; then
-    echo "Создаём token-role readonly-infinite (бессрочные токены)..."
+    echo "Creating token-role readonly-infinite (non-expiring tokens)..."
     vault write auth/token/roles/readonly-infinite \
          allowed_policies="readonly-params" \
          orphan=true                \
          period=0                   \
          token_explicit_max_ttl=0
   else
-    echo "token-role readonly-infinite уже существует."
+    echo "token-role readonly-infinite already exists."
   fi
 }
 
-# Функция для создания директории, если она не существует
+# Function to create a directory if it does not exist
 ensure_directory() {
     local dir=$1
     mkdir -p "$dir"
     chmod 750 "$dir"
 }
 
-# Функция для проверки действительности существующего сертификата
+# Function to check the validity of an existing certificate
 is_cert_valid() {
     local cert_path=$1
     if [ ! -f "$cert_path" ]; then
         return 1
     fi
 
-    # Получение даты истечения сертификата в формате epoch
+    # Get certificate expiration date in epoch format
     expiry_date=$(openssl x509 -enddate -noout -in "$cert_path" | cut -d= -f2)
     expiry_epoch=$(date -d "$expiry_date" +%s)
     current_epoch=$(date +%s)
@@ -190,14 +190,14 @@ is_cert_valid() {
     fi
 }
 
-# Функция для генерации сертификата для сервиса
+# Function to generate a certificate for a service
 generate_certificate() {
     local service=$1
     local config=$2
 
-    echo "Генерация сертификата для $service..."
+    echo "Generating certificate for $service..."
 
-    # Извлечение значений из конфигурации
+    # Extract values from configuration
     local common_name=$(echo "$config" | yq eval ".services.$service.common_name" -)
     local cert_path=$(echo "$config" | yq eval ".services.$service.cert_path" -)
     local cert_file=$(echo "$config" | yq eval ".services.$service.cert_file" -)
@@ -207,52 +207,52 @@ generate_certificate() {
     local keystore_password=$(echo "$config" | yq eval ".services.$service.keystore_password" -)
     local truststore_password=$(echo "$config" | yq eval ".services.$service.truststore_password" -)
 
-    # Флаги наличия паролей
+    # Password presence flags
     local has_keystore_password=false
     local has_truststore_password=false
     [ -n "$keystore_password" ]    && has_keystore_password=true
     [ -n "$truststore_password" ]  && has_truststore_password=true
 
-    # alt_names как CSV
+    # alt_names as CSV
     local alt_names
     alt_names=$(echo "$config" | yq eval ".services.$service.alt_names[]" - | paste -sd ',' -)
 
-    # Подготовка директорий
+    # Prepare directories
     local temp_service_dir="$TEMP_DIR/$service"
     ensure_directory "$temp_service_dir"
     local final_dir="$SSL_BASE_DIR/$service"
     ensure_directory "$final_dir"
 
-    # Если сертификаты уже есть — выходим
+    # If certificates already exist — skip
     if [[ -f "$final_dir/$cert_file" && -f "$final_dir/$key_file" && -f "$final_dir/$ca_file" ]]; then
-        echo "Сертификат для $service уже существует в $final_dir, пропускаем генерацию."
+        echo "Certificate for $service already exists in $final_dir, skipping generation."
         return 0
     fi
 
-    # Генерация через Vault PKI
+    # Generate via Vault PKI
     vault write -format=json pki/issue/bitdive \
         common_name="$common_name" \
         alt_names="$alt_names" \
         ttl="$ttl" > "$temp_service_dir/cert.json"
 
-    # Извлечение в файлы
+    # Extract to files
     jq -r '.data.certificate' "$temp_service_dir/cert.json" > "$temp_service_dir/$cert_file"
     jq -r '.data.private_key' "$temp_service_dir/cert.json" > "$temp_service_dir/$key_file"
     jq -r '.data.issuing_ca'  "$temp_service_dir/cert.json" > "$temp_service_dir/$ca_file"
 
-    # Скопировать в финальную директорию
+    # Copy to final directory
     cp "$temp_service_dir/$cert_file" "$final_dir/"
     cp "$temp_service_dir/$key_file"  "$final_dir/"
     cp "$temp_service_dir/$ca_file"   "$final_dir/"
 
-    # Права доступа
+    # Set permissions
     chmod 600 "$final_dir/$key_file"
     chmod 644 "$final_dir/$cert_file" "$final_dir/$ca_file"
     chmod 755 "$final_dir"
 
-    # Создание keystore/truststore JKS для Keycloak
+    # Create keystore/truststore JKS for Keycloak
     if [[ "$service" == "postgres-client-keycloak" || "$service" == "keycloak-https" ]]; then
-        echo "Создание keystore.jks и truststore.jks для $service..."
+        echo "Creating keystore.jks and truststore.jks for $service..."
 
         # --- keystore.jks ---
         if $has_keystore_password; then
@@ -271,7 +271,7 @@ generate_certificate() {
                 -alias "$service"
             rm -f "$p12_file"
             chmod 644 "$final_dir/keystore.jks"
-            echo "keystore.jks создан: $final_dir/keystore.jks"
+            echo "keystore.jks created: $final_dir/keystore.jks"
         fi
 
         # --- truststore.jks ---
@@ -283,71 +283,71 @@ generate_certificate() {
                 -keystore "$trust_jks" \
                 -storepass "$truststore_password"
             chmod 644 "$trust_jks"
-            echo "truststore.jks создан: $trust_jks"
+            echo "truststore.jks created: $trust_jks"
         fi
     fi
 
-    # *** Блок создания SMTP-truststore (Zoho) ***
+    # *** SMTP truststore creation block (Zoho) ***
     if [[ "$service" == "smtp-zoho" ]] && $has_truststore_password; then
         local tmp_pem="$final_dir/smtp-zoho.pem"
 
-        # Скачиваем все сертификаты с сервера Zoho и сохраняем в smtp-zoho.pem
+        # Download all certificates from the Zoho server and save to smtp-zoho.pem
         openssl s_client -connect smtp.zoho.eu:465 -showcerts </dev/null \
           | awk '/-----BEGIN CERTIFICATE-----/,/-----END CERTIFICATE-----/' \
           > "$tmp_pem"
 
-        # Проверим, что файл не пустой
+        # Verify the file is not empty
         if [[ -s "$tmp_pem" ]]; then
-          echo "Файл smtp-zoho.pem успешно создан и содержит сертификаты."
+          echo "File smtp-zoho.pem successfully created and contains certificates."
         else
-          echo "Ошибка: smtp-zoho.pem пуст или не создан."
+          echo "Error: smtp-zoho.pem is empty or was not created."
         fi
 
 
     fi
 
-    echo "Сертификаты для $service сгенерированы в $final_dir"
+    echo "Certificates for $service generated in $final_dir"
 }
 
-# Функция для мониторинга сертификатов и обновления их при необходимости
+# Function to monitor certificates and renew them when needed
 monitor_certificates() {
     local config=$1
 
     while true; do
-        echo "Проверка сертификатов на наличие обновлений..."
+        echo "Checking certificates for renewal..."
         local services=$(echo "$config" | yq eval '.services | keys | .[]' -)
 
         for service in $services; do
             local cert_file="$SSL_BASE_DIR/$service/$(echo "$config" | yq eval ".services.$service.cert_file" -)"
 
             if [ -f "$cert_file" ]; then
-                # Проверка даты истечения сертификата
+                # Check certificate expiration date
                 expiry_date=$(openssl x509 -enddate -noout -in "$cert_file" | cut -d= -f2)
                 expiry_epoch=$(date -d "$expiry_date" +%s)
                 current_epoch=$(date +%s)
                 days_until_expiry=$(( (expiry_epoch - current_epoch) / 86400 ))
 
                 if [ "$days_until_expiry" -lt 30 ]; then
-                    echo "Сертификат для $service истекает через $days_until_expiry дней. Обновляем..."
+                    echo "Certificate for $service expires in $days_until_expiry days. Renewing..."
                     generate_certificate "$service" "$config"
                 else
-                    echo "Сертификат для $service действителен еще $days_until_expiry дней."
+                    echo "Certificate for $service is valid for $days_until_expiry more days."
                 fi
             else
-                echo "Сертификат для $service не найден. Генерация нового сертификата..."
+                echo "Certificate for $service not found. Generating new certificate..."
                 generate_certificate "$service" "$config"
             fi
         done
 
-        # Ожидание 24 часа перед следующей проверкой
+        # Wait 24 hours before the next check
         sleep 86400
     done
 }
 
-# Функция для создания политики pki-user
+# Function to create pki-user policy
 create_pki_policy() {
     if ! vault policy list | grep -qw "pki-user"; then
-        echo "Создание политики pki-user..."
+        echo "Creating pki-user policy..."
         cat <<EOF > /tmp/pki-user.hcl
 path "pki/issue/*" {
   capabilities = ["update"]
@@ -362,35 +362,35 @@ path "pki/cert/*" {
 }
 EOF
         vault policy write pki-user /tmp/pki-user.hcl
-        echo "Политика pki-user создана."
+        echo "Policy pki-user created."
     else
-        echo "Политика pki-user уже существует."
+        echo "Policy pki-user already exists."
     fi
 }
 
 create_token_issuer_policy() {
   if ! vault policy list | grep -qw "token-issuer"; then
-    echo "Создание политики token-issuer..."
+    echo "Creating token-issuer policy..."
     cat >/tmp/token-issuer.hcl <<'EOF'
 #  ==========  AppRole  ==========
 path "auth/approle/role/readonly-role/role-id"   { capabilities = ["read"] }
 path "auth/approle/role/readonly-role/secret-id" { capabilities = ["update"] }
 
-#  ==========  service-токены  ==========
+#  ==========  service tokens  ==========
 path "auth/token/create"                         { capabilities = ["create", "update"] }
 path "auth/token/create/readonly-infinite"       { capabilities = ["create", "update"] }
 EOF
     vault policy write token-issuer /tmp/token-issuer.hcl
     rm /tmp/token-issuer.hcl
   else
-    echo "Политика token-issuer уже существует."
+    echo "Policy token-issuer already exists."
   fi
 }
 
-# Функция для создания политики transit-user
+# Function to create transit-user policy
 create_transit_policy() {
     if ! vault policy list | grep -qw "transit-user"; then
-        echo "Создание политики transit-user..."
+        echo "Creating transit-user policy..."
         cat <<EOF > /tmp/transit-user.hcl
 path "transit/encrypt/encryption-key" {
   capabilities = ["update","read"]
@@ -423,16 +423,16 @@ path "/transit/keys/signing-key" {
 
 EOF
         vault policy write transit-user /tmp/transit-user.hcl
-        echo "Политика transit-user создана."
+        echo "Policy transit-user created."
     else
-        echo "Политика transit-user уже существует."
+        echo "Policy transit-user already exists."
     fi
 }
 
-# Функция для создания политики kv-user
+# Function to create kv-user policy
 create_kv_policy() {
     if ! vault policy list | grep -qw "kv-user"; then
-        echo "Создание политики kv-user..."
+        echo "Creating kv-user policy..."
         cat <<EOF > /tmp/kv-user.hcl
 path "secret/data-encryption-key" {
   capabilities = ["create", "read", "update", "delete", "list"]
@@ -442,45 +442,45 @@ path "secret/metadata/data-encryption-key" {
   capabilities = ["list"]
 }
 
-# Разрешаем создание, чтение и удаление записей
+# Allow creating, reading, and deleting entries
 path "secret/data/credentials-bit-dive/*" {
   capabilities = ["create", "read", "update", "delete", "list"]
 }
 
-# Разрешаем просмотр метаданных
+# Allow viewing metadata
 path "secret/metadata/credentials-bit-dive/*" {
   capabilities = ["list"]
 }
 EOF
         vault policy write kv-user /tmp/kv-user.hcl
-        echo "Политика kv-user создана."
+        echo "Policy kv-user created."
     else
-        echo "Политика kv-user уже существует."
+        echo "Policy kv-user already exists."
     fi
 }
 
-# Функция для настройки Auth, Политик и Пользователей в Vault
+# Function to configure Auth, Policies, and Users in Vault
 configure_vault_auth_policies_users() {
-    # Включение метода аутентификации userpass, если он не включен
+    # Enable userpass authentication method if not already enabled
     if ! vault auth list -format=json | jq -e '.["userpass/"]' >/dev/null; then
-        echo "Включение метода аутентификации userpass..."
+        echo "Enabling userpass authentication method..."
         vault auth enable userpass
     else
-        echo "Метод аутентификации userpass уже включен."
+        echo "Userpass authentication method is already enabled."
     fi
 
     create_readonly_policy
     create_readonly_token_role
     create_token_issuer_policy
 
-    # Создание политик
+    # Create policies
     create_pki_policy
     create_transit_policy
     create_kv_policy
 
-    # Проверка и создание пользователя
+    # Check and create user
     if [ ! -f "$USER_INFO_FILE" ]; then
-        echo "Создание пользователя..."
+        echo "Creating user..."
         USERNAME="${VAULT_LOGIN}"
         PASSWORD="${VAULT_PASSWORD}"
 
@@ -488,7 +488,7 @@ configure_vault_auth_policies_users() {
             password="$PASSWORD" \
             policies="pki-user,transit-user,kv-user,token-issuer"
 
-        # Сохранение информации о пользователе
+        # Save user information
 cat <<EOF > "$USER_INFO_FILE"
 {
   "username": "$USERNAME",
@@ -496,51 +496,51 @@ cat <<EOF > "$USER_INFO_FILE"
   "policies": ["pki-user", "transit-user", "kv-user", "token-issuer"]
 }
 EOF
-        echo "Пользователь $USERNAME создан с политиками pki-user, transit-user, kv-user."
+        echo "User $USERNAME created with policies pki-user, transit-user, kv-user."
     else
-        echo "Пользователь уже существует. Файл с информацией о пользователе найден."
+        echo "User already exists. User information file found."
     fi
 }
 
-# Функция для настройки Secret Engines (PKI и Transit) в Vault
+# Function to configure Secret Engines (PKI and Transit) in Vault
 configure_vault_secrets_engines() {
-    # Включение PKI Secret Engine, если он не включен
+    # Enable PKI Secret Engine if not already enabled
     if ! vault secrets list -format=json | jq -e '.["pki/"]' >/dev/null; then
-        echo "Включение PKI Secret Engine..."
+        echo "Enabling PKI Secret Engine..."
         vault secrets enable pki
     else
-        echo "PKI Secret Engine уже включен."
+        echo "PKI Secret Engine is already enabled."
     fi
 
-    # Проверка и генерация корневого сертификата
+    # Check and generate root certificate
     if ! vault read pki/config/ca >/dev/null 2>&1; then
-        echo "Генерация корневого сертификата..."
+        echo "Generating root certificate..."
         vault write pki/root/generate/internal \
             common_name="bitdive" \
             ttl="876000h" \
             private_key_format="pkcs8"
     else
-        echo "Корневой сертификат уже существует."
+        echo "Root certificate already exists."
     fi
 
-    # Настройка URL для PKI
+    # Configure URLs for PKI
     current_issuing_cert=$(vault read -field=issuing_certificates pki/config/urls 2>/dev/null || echo "")
     desired_issuing_cert="$VAULT_ADDR/v1/pki/ca"
     current_crl_dp=$(vault read -field=crl_distribution_points pki/config/urls 2>/dev/null || echo "")
     desired_crl_dp="$VAULT_ADDR/v1/pki/crl"
 
     if [ "$current_issuing_cert" != "$desired_issuing_cert" ] || [ "$current_crl_dp" != "$desired_crl_dp" ]; then
-        echo "Настройка URL для PKI..."
+        echo "Configuring URLs for PKI..."
         vault write pki/config/urls \
             issuing_certificates="$desired_issuing_cert" \
             crl_distribution_points="$desired_crl_dp"
     else
-        echo "URL для PKI уже настроены."
+        echo "PKI URLs are already configured."
     fi
 
-    # Проверка и создание роли 'bitdive'
+    # Check and create 'bitdive' role
     if ! vault read pki/roles/bitdive >/dev/null 2>&1; then
-        echo "Создание роли 'bitdive'..."
+        echo "Creating 'bitdive' role..."
         vault write pki/roles/bitdive \
             allowed_domains="bitdive.local,localhost" \
             allow_subdomains=true \
@@ -549,102 +549,102 @@ configure_vault_secrets_engines() {
             enforce_hostnames=false \
             max_ttl="875999h"
     else
-        echo "Роль 'bitdive' уже существует."
+        echo "Role 'bitdive' already exists."
     fi
 
-    # Включение Transit Secret Engine, если он не включен
+    # Enable Transit Secret Engine if not already enabled
     if ! vault secrets list -format=json | jq -e '.["transit/"]' >/dev/null; then
-        echo "Включение Transit Secret Engine..."
+        echo "Enabling Transit Secret Engine..."
         vault secrets enable transit
     else
-        echo "Transit Secret Engine уже включен."
+        echo "Transit Secret Engine is already enabled."
     fi
 
-    # Проверка и создание ключей для Transit
+    # Check and create keys for Transit
     if ! vault read transit/keys/encryption-key >/dev/null 2>&1; then
-        echo "Создание 'encryption-key' для Transit..."
+        echo "Creating 'encryption-key' for Transit..."
         vault write -f transit/keys/encryption-key type=aes256-gcm96 exportable=true auto_rotate_period=24h
     else
-        echo "'encryption-key' для Transit уже существует."
+        echo "'encryption-key' for Transit already exists."
     fi
 
     if ! vault read transit/keys/signing-key >/dev/null 2>&1; then
-        echo "Создание 'signing-key' для Transit..."
+        echo "Creating 'signing-key' for Transit..."
         vault write -f transit/keys/signing-key type=ecdsa-p256 exportable=true auto_rotate_period=24h
     else
-        echo "'signing-key' для Transit уже существует."
+        echo "'signing-key' for Transit already exists."
     fi
 }
 
-# Функция для настройки KV Secret Engine и сохранения статического ключа
+# Function to configure KV Secret Engine and save static key
 configure_vault_kv_secret_engine() {
-    # Включение KV Secret Engine по пути secret/, если он не включенvault write -f transit/keys/signing-key
+    # Enable KV Secret Engine at path secret/ if not already enabled
     if ! vault secrets list -format=json | jq -e '.["secret/"]' >/dev/null; then
-        echo "Включение KV Secret Engine по пути secret/..."
+        echo "Enabling KV Secret Engine at path secret/..."
         vault secrets enable -path=secret kv
     else
-        echo "KV Secret Engine уже включен по пути secret/."
+        echo "KV Secret Engine is already enabled at path secret/."
     fi
 
-    # Проверка и сохранение статического ключа в KV
+    # Check and save static key in KV
     if ! vault kv get secret/data-encryption-key >/dev/null 2>&1; then
-        echo "Создание статического ключа для шифрования данных в KV..."
-        # Генерация случайного ключа
+        echo "Creating static data encryption key in KV..."
+        # Generate random key
         GENERATED_KEY=$(openssl rand -base64 32)
         vault kv put secret/data-encryption-key key="$GENERATED_KEY"
     else
-        echo "Статический ключ для шифрования данных уже существует в KV."
+        echo "Static data encryption key already exists in KV."
     fi
 }
 
 
 
-# Основная функция
+# Main function
 main() {
 
     check_requirements
     ensure_directory "$TEMP_DIR"
     ensure_directory "$SSL_BASE_DIR"
 
-    # Генерация certificates-config.yaml.template из шаблона
+    # Generate certificates-config.yaml from template
     envsubst < /vault/scripts/certificates-config.yaml.template > "$CONFIG_FILE"
 
-    # Чтение конфигурации
+    # Read configuration
     if [ ! -f "$CONFIG_FILE" ]; then
-        echo "Ошибка: Файл конфигурации не найден по пути $CONFIG_FILE"
+        echo "Error: Configuration file not found at $CONFIG_FILE"
         exit 1
     fi
 
     config=$(cat "$CONFIG_FILE")
 
-    # Настройка Auth, Политик и Пользователей
+    # Configure Auth, Policies, and Users
     configure_vault_auth_policies_users
 
-    # Настройка Secret Engines (PKI и Transit)
+    # Configure Secret Engines (PKI and Transit)
     configure_vault_secrets_engines
 
-    # Настройка KV Secret Engine и сохранение статического ключа
+    # Configure KV Secret Engine and save static key
     configure_vault_kv_secret_engine
 
-    # Первоначальная генерация сертификатов
+    # Initial certificate generation
     services=$(echo "$config" | yq eval '.services | keys | .[]' -)
     for service in $services; do
         cert_file="$SSL_BASE_DIR/$service/$(echo "$config" | yq eval ".services.$service.cert_file" -)"
         if is_cert_valid "$cert_file"; then
-            echo "Сертификат для $service действителен. Пропуск генерации."
+            echo "Certificate for $service is valid. Skipping generation."
         else
             if [ -f "$cert_file" ]; then
-                echo "Сертификат для $service истекает или недействителен. Генерация нового сертификата..."
+                echo "Certificate for $service is expiring or invalid. Generating new certificate..."
             else
-                echo "Сертификат для $service не найден. Генерация нового сертификата..."
+                echo "Certificate for $service not found. Generating new certificate..."
             fi
             generate_certificate "$service" "$config"
         fi
     done
 
-    # Запуск мониторинга сертификатов в фоновом режиме
+    # Start certificate monitoring in background
     monitor_certificates "$config" &
 }
 
-# Выполнение основной функции
+# Execute main function
 main "$@"

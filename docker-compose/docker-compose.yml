@@ -33,7 +33,7 @@ services:
       - ./postgresConfig/postgres-init:/work/postgres-init
     command: |
       sh -e -c '
-        echo "[INIT] Настройка сертификатов..."
+        echo "[INIT] Configuring certificates..."
         chown -R 999:999 /var/lib/postgresql/certs &&
         chmod 600 /var/lib/postgresql/certs/server.key &&
         chmod 644 /var/lib/postgresql/certs/server.crt &&
@@ -49,9 +49,9 @@ services:
         chmod 644 /var/lib/postgresql-client/certs/server.key &&
         chmod 644 /var/lib/postgresql-client/certs/server.crt &&
 
-      echo "[INIT] Генерация schema.sql..."
-      if [ -z "$CLICKHOUSE_PG_USER_PASSWORD" ]; then
-        echo "[ERROR] CLICKHOUSE_PG_USER_PASSWORD не задан!" >&2
+      echo "[INIT] Generating schema.sql..."
+    if [ -z "$CLICKHOUSE_PG_USER_PASSWORD" ]; then
+        echo "[ERROR] CLICKHOUSE_PG_USER_PASSWORD is not set!" >&2
         exit 1
       fi
       
@@ -69,7 +69,7 @@ services:
       EOF
       
       chmod 644 /work/postgres-init/01_schema.sql
-      echo "[OK] schema.sql успешно создан"
+      echo "[OK] schema.sql successfully created"
       '
     depends_on:
       - init-clickhouse-collections
@@ -143,7 +143,7 @@ services:
       - flink-network
 
   clickhouse:
-    image: clickhouse/clickhouse-server:25.9.2.1  # лучше закрепить версию, а не :latest
+    image: clickhouse/clickhouse-server:25.9.2.1  # better to pin version instead of :latest
     container_name: clickhouse-bitdive
     environment:
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
@@ -152,7 +152,7 @@ services:
       CLICKHOUSE_DB: ${CLICKHOUSE_DB}
       CLICKHOUSE_USER_PASSWORD: ${CLICKHOUSE_PASSWORD}
     volumes:
-      # Монтируем только конкретные конфигурационные файлы в режиме read-only
+      # Mount only specific configuration files in read-only mode
       - ./clickhouse_config/users.d/admin.xml:/etc/clickhouse-server/users.d/admin.xml:ro
       - ./clickhouse_config/users.d/user_ch.xml:/etc/clickhouse-server/users.d/user_ch.xml:ro
       - ./clickhouse_config/users.d/big-queries.xml:/etc/clickhouse-server/users.d/big-queries.xml:ro
@@ -272,7 +272,7 @@ services:
       - /bin/bash
       - -c
       - |
-        echo '[INIT] Ожидание доступности ClickHouse (порт 9000)...'
+        echo '[INIT] Waiting for ClickHouse availability (port 9000)...'
         sleep 10
         until clickhouse-client \
               --host $${CLICKHOUSE_HOST} \
@@ -281,11 +281,11 @@ services:
               --password $${CLICKHOUSE_PASSWORD} \
               --query 'SELECT 1' \
               2>/dev/null; do
-          echo 'ClickHouse недоступен, ждем...'
+          echo 'ClickHouse is not available, waiting...'
           sleep 3
         done
 
-        echo '[INIT] Создание базы данных $${CLICKHOUSE_DB}...'
+        echo '[INIT] Creating database $${CLICKHOUSE_DB}...'
         clickhouse-client \
               --host $${CLICKHOUSE_HOST} \
               --port 9000 \
@@ -293,7 +293,7 @@ services:
               --password $${CLICKHOUSE_PASSWORD} \
               --query "CREATE DATABASE IF NOT EXISTS $${CLICKHOUSE_DB}"
 
-        echo '[INIT] Создание named collection postgres_creds...'
+        echo '[INIT] Creating named collection postgres_creds...'
         clickhouse-client \
               --host $${CLICKHOUSE_HOST} \
               --port 9000 \
@@ -306,7 +306,7 @@ services:
                    database = '$${POSTGRES_DB}';
               "
 
-        echo '[OK] Инициализация ClickHouse завершена'
+        echo '[OK] ClickHouse initialization completed'
     networks:
       - flink-network
 

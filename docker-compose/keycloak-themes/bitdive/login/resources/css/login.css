@@ -12,7 +12,7 @@
     --bd-border-strong: rgba(255,255,255,.18);
 }
 
-/* Общий фон */
+/* Background */
 body, .login-pf {
     background: radial-gradient(1200px 800px at 20% 10%, rgba(79,70,229,.18), transparent 55%),
     radial-gradient(900px 600px at 80% 30%, rgba(34,211,238,.10), transparent 60%),
@@ -20,7 +20,7 @@ body, .login-pf {
     color: var(--bd-text) !important;
 }
 
-/* Карточка логина */
+/* Login card */
 .card-pf, .pf-c-login__main, .pf-v5-c-login__main {
     background: var(--bd-card) !important;
     border: 1px solid var(--bd-border) !important;
@@ -28,11 +28,11 @@ body, .login-pf {
     box-shadow: 0 20px 60px rgba(0,0,0,.45) !important;
 }
 
-/* Заголовки/вторичный текст */
+/* Headings/secondary text */
 h1, h2, h3, .pf-c-title { color: var(--bd-text) !important; }
 .pf-c-form__helper-text, .subtitle, .kc-info-message, .pf-c-content { color: var(--bd-muted) !important; }
 
-/* Инпуты */
+/* Inputs */
 .pf-c-form-control, .pf-v5-c-form-control {
     border-radius: 12px !important;
     background: rgba(255,255,255,.03) !important;
@@ -44,7 +44,7 @@ h1, h2, h3, .pf-c-title { color: var(--bd-text) !important; }
     box-shadow: 0 0 0 3px rgba(79,70,229,.25) !important;
 }
 
-/* Primary кнопка (Sign in) */
+/* Primary button (Sign in) */
 .pf-c-button.pf-m-primary, .pf-v5-c-button.pf-m-primary, #kc-login {
     background: var(--bd-primary) !important;
     border-color: var(--bd-primary) !important;
@@ -55,7 +55,7 @@ h1, h2, h3, .pf-c-title { color: var(--bd-text) !important; }
     border-color: var(--bd-primary-hover) !important;
 }
 
-/* Ссылки */
+/* Links */
 a, .pf-c-button.pf-m-link, .pf-v5-c-button.pf-m-link {
     color: var(--bd-primary) !important;
 }
@@ -63,14 +63,14 @@ a:hover {
     color: var(--bd-primary-hover) !important;
 }
 
-/* Разделители/бордеры */
+/* Dividers/borders */
 hr, .pf-c-divider {
     border-color: var(--bd-border) !important;
 }
 
-/* ===== Keycloak v2: бренд/логотип =====
-   В KC 26 (keycloak.v2) бренд часто рендерится как .pf-v5-c-brand с текстом realm.
-   Заменяем текст на SVG.
+/* ===== Keycloak v2: brand/logo =====
+   In KC 26 (keycloak.v2) the brand is often rendered as .pf-v5-c-brand with realm text.
+   Replace text with SVG.
 */
 .pf-v5-c-brand {
     width: 220px;
@@ -85,7 +85,7 @@ hr, .pf-c-divider {
     user-select: none;
 }
 
-/* Соц-провайдеры (Google и т.п.) — чтобы смотрелось как “в продукте” */
+/* Social providers (Google etc.) — styled to match the product look */
 .kc-social-provider,
 #kc-social-providers a,
 .pf-c-login__main .pf-c-button.pf-m-control {
@@ -101,9 +101,9 @@ hr, .pf-c-divider {
     background: rgba(255,255,255,.06) !important;
 }
 
-/* ===== ЛОГОТИП =====
-   Keycloak часто показывает “логотип/название” через блок .kc-logo-text.
-   Мы прячем текст и вставляем svg как background.
+/* ===== LOGO =====
+   Keycloak often shows "logo/name" through the .kc-logo-text block.
+   We hide the text and insert svg as background.
 */
 .kc-logo-text, #kc-header-wrapper .kc-logo-text {
     width: 220px;
