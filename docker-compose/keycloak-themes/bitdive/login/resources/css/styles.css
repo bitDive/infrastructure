@@ -1,0 +1,5 @@
+/* Keycloak 26 (keycloak.v2) loads this file by default: /login/<theme>/css/styles.css
+ * We keep our customizations in login.css and import them here.
+ */
+@import url("./login.css");
+
