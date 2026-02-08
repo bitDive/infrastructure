@@ -1,0 +1,120 @@
+:root{
+    --bd-primary: #4f46e5;
+    --bd-primary-hover: #4338ca;
+
+    --bd-bg: #0b1020;
+    --bd-card: #111a33;
+
+    --bd-text: #e8eefc;
+    --bd-muted: #a8b3cf;
+
+    --bd-border: rgba(255,255,255,.10);
+    --bd-border-strong: rgba(255,255,255,.18);
+}
+
+/* Общий фон */
+body, .login-pf {
+    background: radial-gradient(1200px 800px at 20% 10%, rgba(79,70,229,.18), transparent 55%),
+    radial-gradient(900px 600px at 80% 30%, rgba(34,211,238,.10), transparent 60%),
+    var(--bd-bg) !important;
+    color: var(--bd-text) !important;
+}
+
+/* Карточка логина */
+.card-pf, .pf-c-login__main, .pf-v5-c-login__main {
+    background: var(--bd-card) !important;
+    border: 1px solid var(--bd-border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,.45) !important;
+}
+
+/* Заголовки/вторичный текст */
+h1, h2, h3, .pf-c-title { color: var(--bd-text) !important; }
+.pf-c-form__helper-text, .subtitle, .kc-info-message, .pf-c-content { color: var(--bd-muted) !important; }
+
+/* Инпуты */
+.pf-c-form-control, .pf-v5-c-form-control {
+    border-radius: 12px !important;
+    background: rgba(255,255,255,.03) !important;
+    color: var(--bd-text) !important;
+    border-color: var(--bd-border) !important;
+}
+.pf-c-form-control:focus, .pf-v5-c-form-control:focus {
+    border-color: var(--bd-primary) !important;
+    box-shadow: 0 0 0 3px rgba(79,70,229,.25) !important;
+}
+
+/* Primary кнопка (Sign in) */
+.pf-c-button.pf-m-primary, .pf-v5-c-button.pf-m-primary, #kc-login {
+    background: var(--bd-primary) !important;
+    border-color: var(--bd-primary) !important;
+    border-radius: 12px !important;
+}
+.pf-c-button.pf-m-primary:hover, .pf-v5-c-button.pf-m-primary:hover, #kc-login:hover {
+    background: var(--bd-primary-hover) !important;
+    border-color: var(--bd-primary-hover) !important;
+}
+
+/* Ссылки */
+a, .pf-c-button.pf-m-link, .pf-v5-c-button.pf-m-link {
+    color: var(--bd-primary) !important;
+}
+a:hover {
+    color: var(--bd-primary-hover) !important;
+}
+
+/* Разделители/бордеры */
+hr, .pf-c-divider {
+    border-color: var(--bd-border) !important;
+}
+
+/* ===== Keycloak v2: бренд/логотип =====
+   В KC 26 (keycloak.v2) бренд часто рендерится как .pf-v5-c-brand с текстом realm.
+   Заменяем текст на SVG.
+*/
+.pf-v5-c-brand {
+    width: 220px;
+    height: 44px;
+    display: block;
+    margin: 0 auto 12px auto;
+    background-image: url("../img/bitdive-logo.svg") !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    background-size: contain !important;
+    color: transparent !important;
+    user-select: none;
+}
+
+/* Соц-провайдеры (Google и т.п.) — чтобы смотрелось как “в продукте” */
+.kc-social-provider,
+#kc-social-providers a,
+.pf-c-login__main .pf-c-button.pf-m-control {
+    border-radius: 12px !important;
+    border: 1px solid var(--bd-border) !important;
+    background: rgba(255,255,255,.03) !important;
+    color: var(--bd-text) !important;
+}
+.kc-social-provider:hover,
+#kc-social-providers a:hover,
+.pf-c-login__main .pf-c-button.pf-m-control:hover {
+    border-color: var(--bd-border-strong) !important;
+    background: rgba(255,255,255,.06) !important;
+}
+
+/* ===== ЛОГОТИП =====
+   Keycloak часто показывает “логотип/название” через блок .kc-logo-text.
+   Мы прячем текст и вставляем svg как background.
+*/
+.kc-logo-text, #kc-header-wrapper .kc-logo-text {
+    width: 220px;
+    height: 44px;
+    display: block;
+    margin: 0 auto 12px auto;
+    background-image: url("../img/bitdive-logo.svg");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+}
+.kc-logo-text span, #kc-header-wrapper .kc-logo-text span {
+    display: none !important;
+}

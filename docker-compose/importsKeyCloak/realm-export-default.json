@@ -85,6 +85,15 @@
         "clientRole": false,
         "containerId": "003a8140-7ce2-4314-86b4-259102b37f51",
         "attributes": {}
+      },
+      {
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "name": "bitdive_admin",
+        "description": "BitDive administrator role",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "003a8140-7ce2-4314-86b4-259102b37f51",
+        "attributes": {}
       }
     ],
     "client": {
@@ -407,6 +416,27 @@
     }
   },
   "groups": [],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": true
+        }
+      ],
+      "requiredActions": [
+        "UPDATE_PASSWORD"
+      ],
+      "realmRoles": [
+        "default-roles-bitdive",
+        "bitdive_admin"
+      ]
+    }
+  ],
   "defaultRole": {
     "id": "9d482713-a656-4414-b22f-f601f3c364c8",
     "name": "default-roles-bitdive",
@@ -728,7 +758,7 @@
       "clientId": "react-client",
       "name": "",
       "description": "",
-      "rootUrl": "",
+      "rootUrl": "https://${SERVER_NAME}",
       "adminUrl": "",
       "baseUrl": "",
       "surrogateAuthRequired": false,
@@ -736,10 +766,10 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "http://localhost:3000/*"
+        "https://${SERVER_NAME}/*"
       ],
       "webOrigins": [
-        "http://localhost:3000"
+        "https://${SERVER_NAME}"
       ],
       "notBefore": 0,
       "bearerOnly": false,
@@ -1549,6 +1579,8 @@
     "xXSSProtection": "1; mode=block",
     "strictTransportSecurity": "max-age=31536000; includeSubDomains"
   },
+  "loginTheme": "bitdive",
+  "accountTheme": "bitdive",
   "smtpServer": {},
   "eventsEnabled": false,
   "eventsListeners": [
