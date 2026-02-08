@@ -2,9 +2,9 @@
 set -e
 
 # ============================================================
-#  BitDive Infrastructure — автоматический деплой
-#  Использование:  bash deploy.sh [ЦЕЛЕВАЯ_ПАПКА]
-#  По умолчанию клонирует в ./bitdive-infrastructure
+#  BitDive Infrastructure — automatic deployment
+#  Usage:  bash deploy.sh [TARGET_FOLDER]
+#  Default clones to ./bitdive-infrastructure
 # ============================================================
 
 RED='\033[0;31m'
@@ -18,16 +18,16 @@ warn() { echo -e "${YELLOW}[!]${NC} $1"; }
 err()  { echo -e "${RED}[✖]${NC} $1"; exit 1; }
 info() { echo -e "${CYAN}[→]${NC} $1"; }
 
-# ---------- Генерация паролей ----------
+# ---------- Password generation ----------
 generate_password() {
     local length=${1:-24}
-    # Используем openssl если есть, иначе /dev/urandom, иначе $RANDOM
+    # Use openssl if available, otherwise /dev/urandom, otherwise $RANDOM
     if command -v openssl &>/dev/null; then
         openssl rand -base64 "$length" | tr -dc 'A-Za-z0-9' | head -c "$length"
     elif [ -e /dev/urandom ]; then
         cat /dev/urandom | tr -dc 'A-Za-z0-9' | head -c "$length"
     else
-        # Fallback для Windows без openssl
+        # Fallback for Windows without openssl
         local pw=""
         local chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
         for i in $(seq 1 "$length"); do
@@ -45,15 +45,15 @@ generate_token_secret() {
     fi
 }
 
-# ---------- Проверка зависимостей ----------
-info "Проверка зависимостей..."
+# ---------- Dependency check ----------
+info "Checking dependencies..."
 
 if ! command -v git &>/dev/null; then
-    err "git не найден. Установите git: https://git-scm.com/"
+    err "git not found. Install git: https://git-scm.com/"
 fi
 
 if ! command -v docker &>/dev/null; then
-    err "docker не найден. Установите Docker: https://docs.docker.com/get-docker/"
+    err "docker not found. Install Docker: https://docs.docker.com/get-docker/"
 fi
 
 if command -v docker-compose &>/dev/null; then
@@ -61,47 +61,47 @@ if command -v docker-compose &>/dev/null; then
 elif docker compose version &>/dev/null 2>&1; then
     DC="docker compose"
 else
-    err "docker-compose не найден. Установите Docker Compose: https://docs.docker.com/compose/install/"
+    err "docker-compose not found. Install Docker Compose: https://docs.docker.com/compose/install/"
 fi
 
-log "Зависимости в порядке (git, docker, $DC)"
+log "Dependencies OK (git, docker, $DC)"
 
 # ============================================================
-#  ШАГ 1: Клонирование репозитория
+#  STEP 1: Clone repository
 # ============================================================
 TARGET_DIR="${1:-bitdive-infrastructure}"
 REPO_URL="https://github.com/bitDive/infrastructure.git"
 
 echo ""
-info "Шаг 1/6 — Клонирование $REPO_URL → $TARGET_DIR"
+info "Step 1/6 — Cloning $REPO_URL → $TARGET_DIR"
 
 if [ -d "$TARGET_DIR" ]; then
-    warn "Папка $TARGET_DIR уже существует. Обновляем (git pull)..."
+    warn "Folder $TARGET_DIR already exists. Updating (git pull)..."
     cd "$TARGET_DIR"
-    git pull || warn "git pull не удался, продолжаем с текущей версией"
+    git pull || warn "git pull failed, continuing with current version"
 else
     git clone "$REPO_URL" "$TARGET_DIR"
     cd "$TARGET_DIR"
 fi
 
-log "Репозиторий готов: $(pwd)"
+log "Repository ready: $(pwd)"
 
 # ============================================================
-#  ШАГ 2: Переход в docker-compose
-# ============================================================
-echo ""
-info "Шаг 2/6 — Переход в папку docker-compose"
-
-cd docker-compose || err "Папка docker-compose не найдена!"
-log "Рабочая директория: $(pwd)"
-
-# ============================================================
-#  ШАГ 3: Генерация .env с рандомными паролями
+#  STEP 2: Navigate to docker-compose
 # ============================================================
 echo ""
-info "Шаг 3/6 — Генерация .env с новыми паролями"
+info "Step 2/6 — Navigating to docker-compose folder"
 
-# Генерируем уникальные пароли
+cd docker-compose || err "docker-compose folder not found!"
+log "Working directory: $(pwd)"
+
+# ============================================================
+#  STEP 3: Generate .env with random passwords
+# ============================================================
+echo ""
+info "Step 3/6 — Generating .env with new passwords"
+
+# Generate unique passwords
 PASS_POSTGRES=$(generate_password 20)
 PASS_CLICKHOUSE=$(generate_password 20)
 PASS_CLICKHOUSE_PG=$(generate_password 20)
@@ -117,10 +117,10 @@ USER_VAULT="vault_admin"
 PASS_VAULT=$(generate_password 20)
 SECRET_TOKEN=$(generate_token_secret)
 
-# Резервная копия если .env уже есть
+# Backup if .env already exists
 if [ -f .env ]; then
     cp .env ".env.backup.$(date +%Y%m%d_%H%M%S)"
-    warn "Старый .env сохранён как бэкап"
+    warn "Old .env saved as backup"
 fi
 
 cat > .env << ENVEOF
@@ -221,10 +221,10 @@ APP_EMAIL_SMTP_INFORMATION_EMAIL=
 TOTAL_PROCESS_MEMORY=4g
 ENVEOF
 
-log ".env создан с новыми паролями"
+log ".env created with new passwords"
 echo ""
 echo "  ┌──────────────────────────────────────────────────────┐"
-echo "  │  Сгенерированные учётные данные (сохраните!):        │"
+echo "  │  Generated credentials (save these!):                │"
 echo "  ├──────────────────────────────────────────────────────┤"
 echo "  │  PostgreSQL password : ${PASS_POSTGRES}"
 echo "  │  ClickHouse password : ${PASS_CLICKHOUSE}"
@@ -240,62 +240,62 @@ echo "  └───────────────────────
 echo ""
 
 # ============================================================
-#  ШАГ 4: Запуск Vault
+#  STEP 4: Start Vault
 # ============================================================
-info "Шаг 4/6 — Запуск Vault"
+info "Step 4/6 — Starting Vault"
 
 $DC up -d vault
-log "Vault запущен. Ожидание 30 секунд для инициализации..."
+log "Vault started. Waiting 30 seconds for initialization..."
 
 for i in $(seq 30 -1 1); do
-    printf "\r  ⏳ Осталось %2d сек..." "$i"
+    printf "\r  ⏳ %2d seconds remaining..." "$i"
     sleep 1
 done
 echo ""
-log "Vault готов"
+log "Vault ready"
 
 # ============================================================
-#  ШАГ 5: Инициализация SSL для баз данных
+#  STEP 5: Initialize SSL for databases
 # ============================================================
 echo ""
-info "Шаг 5/6 — Запуск init-db-ssl (настройка SSL сертификатов)"
+info "Step 5/6 — Starting init-db-ssl (SSL certificate setup)"
 
 $DC up -d init-db-ssl
-log "init-db-ssl запущен. Ожидание 40 секунд..."
+log "init-db-ssl started. Waiting 40 seconds..."
 
 for i in $(seq 40 -1 1); do
-    printf "\r  ⏳ Осталось %2d сек..." "$i"
+    printf "\r  ⏳ %2d seconds remaining..." "$i"
     sleep 1
 done
 echo ""
-log "init-db-ssl завершён"
+log "init-db-ssl completed"
 
 # ============================================================
-#  ШАГ 6: Запуск всех остальных сервисов
+#  STEP 6: Start all remaining services
 # ============================================================
 echo ""
-info "Шаг 6/6 — Запуск всех сервисов (init-container-ssl)"
+info "Step 6/6 — Starting all services (init-container-ssl)"
 
 $DC up -d init-container-ssl
-log "Все сервисы запущены!"
+log "All services started!"
 
 # ============================================================
-#  Итог
+#  Summary
 # ============================================================
 echo ""
 echo "=========================================================="
-echo -e "${GREEN}  ✅  BitDive успешно развёрнут!${NC}"
+echo -e "${GREEN}  ✅  BitDive successfully deployed!${NC}"
 echo "=========================================================="
 echo ""
-echo "  Доступ к сервисам:"
+echo "  Service access:"
 echo "    Frontend      : https://localhost"
 echo "    Keycloak      : https://localhost/keyCloak"
 echo "    MinIO Console : https://localhost/minio"
 echo "    Flink Load    : https://localhost/flink-load"
 echo "    PostgreSQL    : localhost:5432"
 echo ""
-echo "  Логин Keycloak  : ${USER_KEYCLOAK} / ${PASS_KEYCLOAK}"
-echo "  Логин MinIO     : ${USER_MINIO} / ${PASS_MINIO}"
+echo "  Keycloak login  : ${USER_KEYCLOAK} / ${PASS_KEYCLOAK}"
+echo "  MinIO login     : ${USER_MINIO} / ${PASS_MINIO}"
 echo ""
-echo "  Полный .env: $(pwd)/.env"
+echo "  Full .env: $(pwd)/.env"
 echo "=========================================================="

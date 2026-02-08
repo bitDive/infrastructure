@@ -50,7 +50,7 @@ services:
         chmod 644 /var/lib/postgresql-client/certs/server.crt &&
 
       echo "[INIT] Generating schema.sql..."
-    if [ -z "$CLICKHOUSE_PG_USER_PASSWORD" ]; then
+      if [ -z "$CLICKHOUSE_PG_USER_PASSWORD" ]; then
         echo "[ERROR] CLICKHOUSE_PG_USER_PASSWORD is not set!" >&2
         exit 1
       fi
