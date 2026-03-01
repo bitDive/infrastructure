@@ -9,6 +9,7 @@ RUN apt-get update \
     && apt-get install -y \
        postgresql-17-cron \
        postgresql-plpython3-17 \
+       postgresql-17-pgvector \
        python3-cryptography \
     && rm -rf /var/lib/apt/lists/*
 

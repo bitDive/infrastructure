@@ -1,0 +1,5 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+huggingface_hub==0.24.7
+llama-cpp-python==0.3.16

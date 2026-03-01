@@ -89,6 +89,7 @@ services:
       - frontend
       - mcp-server
       - nginx
+      - bitdive-llm-api
 
 
 
@@ -162,7 +163,7 @@ services:
       - ./clickhouse_config/config.d/20-disable-logs.xml:/etc/clickhouse-server/config.d/20-disable-logs.xml:ro
       - ./clickhouse_config/config.d/logging.xml:/etc/clickhouse-server/config.d/logging.xml:ro
       - ./vault/ssl/clickhouse-server:/etc/clickhouse-server/certs:ro
-      - ./clickhouse_data:/var/lib/clickhouse
+#      - ./clickhouse_data:/var/lib/clickhouse
       - ./clickhouse_logs:/var/log/clickhouse-server
       - ./clickhouse_tmp:/var/lib/clickhouse/tmp:rw
     networks:
@@ -331,6 +332,28 @@ services:
     networks:
       - flink-network
 
+  bitdive-llm-api:
+    image: frolikoveabitdive/bitdive-llm:latest
+    container_name: bitdive-llm-api
+    environment:
+      HF_REPO_ID: "bartowski/DeepSeek-Coder-V2-Lite-Instruct-GGUF"
+
+      MODEL_FILENAME: ""
+      MODEL_GLOB: "*Q4_K_S*.gguf"
+
+      CHAT_FORMAT: ""
+
+      N_CTX: "8192"
+      N_THREADS: "12"
+      N_GPU_LAYERS: "0"
+      LLAMA_VERBOSE: "false"
+
+    volumes:
+      - ./models:/models
+    restart: unless-stopped
+    networks:
+      - flink-network
+
   monitoring-api:
     image: frolikoveabitdive/bitdive-monitoring-api:latest
     container_name: monitoring-api
@@ -380,6 +403,13 @@ services:
       APP_EMAIL_SMTP_ALERT_PASSWORD: ${APP_EMAIL_SMTP_ALERT_PASSWORD}
       APP_EMAIL_SMTP_INFORMATION_USER: ${APP_EMAIL_SMTP_INFORMATION_USER}
       APP_EMAIL_SMTP_INFORMATION_PASSWORD: ${APP_EMAIL_SMTP_INFORMATION_PASSWORD}
+
+      GIT_METHODS_ANALYSIS_DELAY_MS: ${GIT_METHODS_ANALYSIS_DELAY_MS}
+      GIT_METHODS_ANALYSIS_LLM_PATCH: ${GIT_METHODS_ANALYSIS_LLM_PATCH}
+      GIT_METHODS_ANALYSIS_LLM_TEMPERATURE: ${GIT_METHODS_ANALYSIS_LLM_TEMPERATURE}
+      GIT_METHODS_ANALYSIS_LLM_MAX_TOKENS: ${GIT_METHODS_ANALYSIS_LLM_MAX_TOKENS}
+      LLM_URL: ${LLM_URL}
+
 
     restart: unless-stopped
     networks:
