@@ -89,7 +89,6 @@ services:
       - frontend
       - mcp-server
       - nginx
-      - bitdive-llm-api
 
 
 
