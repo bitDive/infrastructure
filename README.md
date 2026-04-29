@@ -1,6 +1,25 @@
-# BitDive Docker Compose Configuration
+# BitDive Infrastructure
 
-This repository contains a Docker Compose setup for deploying the BitDive environment. It includes the following services:
+[![Docker](https://img.shields.io/badge/Docker-20.10%2B-2496ED?logo=docker&logoColor=white)](#prerequisites)
+[![Compose](https://img.shields.io/badge/Compose-v1.29%2B-2496ED?logo=docker&logoColor=white)](#prerequisites)
+[![Services](https://img.shields.io/badge/Services-Identity%20%7C%20Storage%20%7C%20API-111111)](#overview)
+[![BitDive](https://img.shields.io/badge/BitDive-Infrastructure-1F6FEB)](https://bitdive.io/)
+
+Docker-based infrastructure for deploying the full BitDive observability stack, including identity management, object storage, and the monitoring API.
+
+This repository contains a production-ready Docker Compose setup for the BitDive environment, handling secrets, persistence, and secure networking out of the box.
+
+## Demo
+
+[![Watch the BitDive demo](https://img.youtube.com/vi/WqtLXcODz8I/maxresdefault.jpg)](https://www.youtube.com/watch?v=WqtLXcODz8I)
+
+Watch the BitDive product demo on YouTube:
+
+- https://www.youtube.com/watch?v=WqtLXcODz8I
+
+## Overview
+
+This setup includes the following services:
 
 - **Vault**: A secrets management system.
 - **PostgreSQL**: A database server with SSL configuration.
